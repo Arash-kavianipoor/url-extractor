@@ -43,9 +43,13 @@ export const ScraperForm: React.FC<ScraperFormProps> = ({
   // Bi-directional listener for extension communication
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (!event.data) return;
+      if (!event.data || typeof event.data !== 'object') return;
 
-      if (event.data.type === 'EXTENSION_STATUS' && event.data.message === 'I am ready') {
+      if (
+        event.data.type === 'EXTENSION_READY' ||
+        (event.data.type === 'EXTENSION_STATUS' &&
+          (event.data.message === 'I am ready' || event.data.status === 'ready'))
+      ) {
         setExtensionReady(true);
         if (event.data.browser) {
           setExtensionBrowser(event.data.browser);
@@ -53,41 +57,24 @@ export const ScraperForm: React.FC<ScraperFormProps> = ({
       }
 
       // Extension completed full extraction of all files (HTML, CSS, JS, Media, Assets)
-      if (event.data.type === 'EXTENSION_EXTRACTION_COMPLETE' && event.data.data) {
+      if (
+        (event.data.type === 'EXTRACTION_COMPLETE' ||
+          event.data.type === 'EXTENSION_EXTRACTION_COMPLETE') &&
+        event.data.data
+      ) {
         setIsExtractingWithExt(false);
         const data = event.data.data;
         if (onExtensionResult) {
-          const formattedResult: ScrapeResult = {
-            targetUrl: data.targetUrl,
-            mode: 'single',
-            domain: new URL(data.targetUrl).hostname,
-            title: data.title,
-            pagesScanned: 1,
-            totalLinksFound: data.links?.length || 0,
-            internalLinksCount: data.links?.filter((l: any) => l.isInternal).length || 0,
-            externalLinksCount: data.links?.filter((l: any) => !l.isInternal).length || 0,
-            links: data.links || [],
-            headings: data.headings || [],
-            totalHeadingsFound: data.headings?.length || 0,
-            headingsCount: {
-              h1: data.headings?.filter((h: any) => h.level === 1).length || 0,
-              h2: data.headings?.filter((h: any) => h.level === 2).length || 0,
-              h3: data.headings?.filter((h: any) => h.level === 3).length || 0,
-              h4: data.headings?.filter((h: any) => h.level === 4).length || 0,
-              h5: data.headings?.filter((h: any) => h.level === 5).length || 0,
-              h6: data.headings?.filter((h: any) => h.level === 6).length || 0,
-            },
-            files: data.files || [],
-            scannedUrls: [data.targetUrl],
-            executionTimeMs: 1200,
-          };
-          onExtensionResult(formattedResult);
+          onExtensionResult(data);
         } else {
           onScrape(data.targetUrl, 'single', 1, data.files?.[0]?.content);
         }
       }
 
-      if (event.data.type === 'EXTENSION_EXTRACTION_ERROR') {
+      if (
+        event.data.type === 'EXTRACTION_ERROR' ||
+        event.data.type === 'EXTENSION_EXTRACTION_ERROR'
+      ) {
         setIsExtractingWithExt(false);
         setError(event.data.error || 'Extension extraction encountered an issue.');
       }
@@ -95,9 +82,11 @@ export const ScraperForm: React.FC<ScraperFormProps> = ({
 
     window.addEventListener('message', handleMessage);
 
-    // Initial ping to extension
+    // Initial pings to extension
+    window.postMessage({ type: 'EXTENSION_PING' }, '*');
     window.postMessage({ type: 'PING_EXTENSION' }, '*');
     const pingTimer = setInterval(() => {
+      window.postMessage({ type: 'EXTENSION_PING' }, '*');
       window.postMessage({ type: 'PING_EXTENSION' }, '*');
     }, 2000);
 
@@ -147,6 +136,16 @@ export const ScraperForm: React.FC<ScraperFormProps> = ({
     // 100% Extraction is handled by the browser extension
     if (extensionReady) {
       setIsExtractingWithExt(true);
+      const reqId = 'req_' + Date.now();
+      window.postMessage(
+        {
+          type: 'START_EXTRACTION',
+          requestId: reqId,
+          targetUrl: validUrl,
+          devices: ['desktop', 'tablet', 'mobile'],
+        },
+        '*'
+      );
       window.postMessage(
         {
           type: 'REQUEST_FULL_URL_EXTRACTION',
@@ -154,10 +153,9 @@ export const ScraperForm: React.FC<ScraperFormProps> = ({
         },
         '*'
       );
-    } else {
-      // If extension not active yet, run fallback direct extraction
-      onScrape(validUrl, 'single', 1);
     }
+    // Inform parent App component to initiate tracking and progress view
+    onScrape(validUrl, 'single', 1);
   };
 
   const handleSubmit = (e: React.FormEvent) => {

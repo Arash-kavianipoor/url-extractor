@@ -15,7 +15,7 @@ import {
   Tablet,
   Smartphone
 } from 'lucide-react';
-import { Language, CrawlMode, ScrapeResult, ExtractedFile, DeviceType } from './types.js';
+import { Language, CrawlMode, ScrapeResult, ExtractedFile, DeviceType, ExtensionStatus, ExtractionStep } from './types.js';
 import { translations, isRtlLanguage } from './i18n.js';
 import { Header } from './components/Header.js';
 import { ScraperForm } from './components/ScraperForm.js';
@@ -70,6 +70,12 @@ export default function App() {
   const [originalFiles, setOriginalFiles] = useState<ExtractedFile[]>([]);
   const [activeTab, setActiveTab] = useState<'links' | 'headings' | 'editor' | 'preview'>('preview');
   const [isZippingAll, setIsZippingAll] = useState<boolean>(false);
+  const [extensionStatus, setExtensionStatus] = useState<ExtensionStatus>('NOT_INSTALLED');
+  const [extensionBrowser, setExtensionBrowser] = useState<string>('');
+  const [currentProgressStep, setCurrentProgressStep] = useState<ExtractionStep>('Connecting');
+  const [currentProgressPercent, setCurrentProgressPercent] = useState<number>(0);
+  const [currentProgressStatusText, setCurrentProgressStatusText] = useState<string>('');
+  const [currentProgressDevice, setCurrentProgressDevice] = useState<DeviceType>('desktop');
   const [deviceProgress, setDeviceProgress] = useState<Partial<Record<DeviceType, { status: string; percent: number }>>>({
     desktop: { status: 'آماده', percent: 0 },
     tablet: { status: 'آماده', percent: 0 },
@@ -82,6 +88,88 @@ export default function App() {
   // Sync document SEO tags, hreflangs, canonical, JSON-LD, html lang and dir
   useEffect(() => {
     updateDocumentSeo(language);
+  }, [language]);
+
+  // Bi-directional event communication with the extraction extension
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (!event.data || typeof event.data !== 'object') return;
+
+      // Extension Ready / Status
+      if (
+        event.data.type === 'EXTENSION_READY' ||
+        (event.data.type === 'EXTENSION_STATUS' &&
+          (event.data.status === 'ready' || event.data.message === 'I am ready'))
+      ) {
+        setExtensionStatus('READY');
+        if (event.data.browser) {
+          setExtensionBrowser(event.data.browser);
+        }
+      }
+
+      // Real Real-time Progress Tracking from the Extension
+      if (event.data.type === 'EXTRACTION_PROGRESS') {
+        const { step, percent, statusText, device } = event.data;
+        if (step) setCurrentProgressStep(step);
+        if (typeof percent === 'number') setCurrentProgressPercent(percent);
+        if (statusText) setCurrentProgressStatusText(statusText);
+        if (device) setCurrentProgressDevice(device);
+
+        const targetDev: DeviceType = device || 'desktop';
+        setDeviceProgress((prev) => ({
+          ...prev,
+          [targetDev]: {
+            status: statusText || step || 'در حال رندر...',
+            percent: typeof percent === 'number' ? percent : 50,
+          },
+        }));
+      }
+
+      // Full Extraction Complete from Extension
+      if (
+        (event.data.type === 'EXTRACTION_COMPLETE' ||
+          event.data.type === 'EXTENSION_EXTRACTION_COMPLETE') &&
+        event.data.data
+      ) {
+        setIsLoading(false);
+        setExtensionStatus('COMPLETED');
+        setCurrentProgressStep('Completed');
+        setCurrentProgressPercent(100);
+        setCurrentProgressStatusText(
+          language === 'fa' ? 'استخراج با موفقیت تکمیل شد' : 'Extraction completed successfully'
+        );
+        handleExtensionResult(event.data.data);
+      }
+
+      // Error from Extension
+      if (
+        event.data.type === 'EXTRACTION_ERROR' ||
+        event.data.type === 'EXTENSION_EXTRACTION_ERROR'
+      ) {
+        setIsLoading(false);
+        setExtensionStatus('ERROR');
+        setErrorMessage(event.data.error || 'Extension extraction encountered an error.');
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // Initial ping to extension
+    window.postMessage({ type: 'EXTENSION_PING' }, '*');
+    window.postMessage({ type: 'PING_EXTENSION' }, '*');
+    const pingTimer = setInterval(() => {
+      window.postMessage({ type: 'EXTENSION_PING' }, '*');
+      window.postMessage({ type: 'PING_EXTENSION' }, '*');
+    }, 2000);
+
+    if ((window as any).__WEB_SCRAPER_EXTENSION_READY__) {
+      setExtensionStatus('READY');
+    }
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      clearInterval(pingTimer);
+    };
   }, [language]);
 
   // Sync theme with localStorage and document root
@@ -122,8 +210,9 @@ export default function App() {
 
   const handleExtensionResult = (extResult: ScrapeResult) => {
     setResult(extResult);
-    setOriginalFiles(extResult.files);
-    setEditedFiles(extResult.files);
+    const initialFiles = extResult.deviceVersions?.desktop?.files || extResult.files || [];
+    setOriginalFiles(JSON.parse(JSON.stringify(initialFiles)));
+    setEditedFiles(JSON.parse(JSON.stringify(initialFiles)));
     setActiveTab('preview');
     setSelectedDevice('desktop');
     setErrorMessage(null);
@@ -139,137 +228,81 @@ export default function App() {
     setActiveScrapeUrl(url);
     setActiveScrapeMode(mode);
     setErrorMessage(null);
+    setCurrentProgressStep('Connecting');
+    setCurrentProgressPercent(5);
+    setCurrentProgressStatusText(
+      language === 'fa' ? 'اتصال به اکستنشن استخراج...' : 'Connecting to extraction extension...'
+    );
+
     setDeviceProgress({
       desktop: {
-        status: language === 'fa' ? 'اتصال به سرور و دانلود کتابخانه‌ها...' : 'Connecting to server & downloading libraries...',
-        percent: 20,
+        status: language === 'fa' ? 'اتصال به اکستنشن...' : 'Connecting...',
+        percent: 5,
       },
       tablet: {
-        status: language === 'fa' ? 'واکشی استایل‌ها، فونت‌ها و فایل‌های CSS...' : 'Fetching styles, fonts & CSS files...',
-        percent: 20,
+        status: language === 'fa' ? 'در صف...' : 'Queued...',
+        percent: 0,
       },
       mobile: {
-        status: language === 'fa' ? 'آماده‌سازی پکیج آفلاین...' : 'Preparing offline bundle...',
-        percent: 20,
+        status: language === 'fa' ? 'در صف...' : 'Queued...',
+        percent: 0,
       },
     });
 
-    const progressTimer = setInterval(() => {
-      setDeviceProgress((prev) => ({
-        desktop: {
-          status: language === 'fa' ? 'دانلود کتابخانه‌ها و اسکریپت‌های سرور...' : 'Downloading server libraries & scripts...',
-          percent: Math.min(prev.desktop.percent + 6, 88),
+    // 1. Primary Engine: Browser Extension executes the entire multi-device DOM extraction
+    const isExtReady =
+      extensionStatus === 'READY' ||
+      extensionStatus === 'BUSY' ||
+      Boolean((window as any).__WEB_SCRAPER_EXTENSION_READY__);
+
+    if (isExtReady) {
+      setExtensionStatus('BUSY');
+      const reqId = 'req_' + Date.now();
+      window.postMessage(
+        {
+          type: 'START_EXTRACTION',
+          requestId: reqId,
+          targetUrl: url,
+          devices: ['desktop', 'tablet', 'mobile'],
         },
-        tablet: {
-          status: language === 'fa' ? 'دریافت و فشرده‌سازی استایل‌های CSS...' : 'Fetching & embedding CSS styles...',
-          percent: Math.min(prev.tablet.percent + 6, 88),
+        '*'
+      );
+      window.postMessage(
+        {
+          type: 'REQUEST_FULL_URL_EXTRACTION',
+          targetUrl: url,
         },
-        mobile: {
-          status: language === 'fa' ? 'ساخت فایل‌های آفلاین دیوایس‌ها...' : 'Building offline device files...',
-          percent: Math.min(prev.mobile.percent + 6, 88),
-        },
-      }));
-    }, 450);
-
-    try {
-      let data: ScrapeResult | null = null;
-
-      // Primary: Complete Server-Side Scraping Pipeline (fetches all CSS stylesheets, webfonts & JS libraries)
-      let response = await fetch('/api/scrape', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url, mode, maxPages, customHtml }),
-      });
-
-      // If server was blocked with 503 by target site (e.g. Cloudflare bot protection) and customHtml wasn't provided:
-      if (!response.ok && response.status === 503 && (!customHtml || !customHtml.trim())) {
-        try {
-          // Attempt client-side browser fetch with authentic device profiles
-          const deviceHtmlMap = await fetchMultiDeviceHtmlInBrowser(url, (device, status, percent) => {
-            setDeviceProgress((prev) => ({
-              ...prev,
-              [device]: { status, percent: Math.min(percent, 75) },
-            }));
-          });
-
-          // Send the authentic browser-fetched HTML to server to extract and fetch ALL stylesheets, webfonts and JS libraries!
-          response = await fetch('/api/scrape', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              url,
-              mode,
-              maxPages,
-              customHtml: deviceHtmlMap.desktop,
-            }),
-          });
-        } catch {}
-      }
-
-      clearInterval(progressTimer);
-
-      if (!response.ok) {
-        let errMessage = '';
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          try {
-            const errorJson = await response.json();
-            errMessage = errorJson.error;
-          } catch {
-            errMessage = `HTTP ${response.status}: Failed to scrape target URL.`;
-          }
-        } else {
-          if (response.status === 503) {
-            errMessage =
-              language === 'fa'
-                ? 'سایت مقصد دسترسی مستقیم سرور را محدود کرده است. لطفاً اکستنشن مرورگر را با ۱ کلیک از دکمه بالای فرم فعال کنید تا استخراج تمام فایل‌ها (Assetها، CSS و JS) مستقیماً و خودکار بدون کپی-پیست انجام شود.'
-                : 'Target site restricted server requests. Please activate the browser extension from the button above for zero-copy full extraction of assets, CSS, and JS.';
-          } else {
-            errMessage = `HTTP ${response.status} (${response.statusText || 'Server Error'})`;
-          }
-        }
-        throw new Error(errMessage || 'Failed to fetch the target URL.');
-      }
-
-      data = await response.json();
-
-      setDeviceProgress({
-        desktop: {
-          status: language === 'fa' ? 'تکمیل شد (استایل‌ها و کتابخانه‌ها کامل)' : 'Done (Full styles & libraries bundled)',
-          percent: 100,
-        },
-        tablet: {
-          status: language === 'fa' ? 'تکمیل شد (استایل‌ها و کتابخانه‌ها کامل)' : 'Done (Full styles & libraries bundled)',
-          percent: 100,
-        },
-        mobile: {
-          status: language === 'fa' ? 'تکمیل شد (استایل‌ها و کتابخانه‌ها کامل)' : 'Done (Full styles & libraries bundled)',
-          percent: 100,
-        },
-      });
-
-      if (!data) {
-        throw new Error('Failed to parse website content.');
-      }
-
-      setResult(data);
-      // Select desktop by default and load desktop files
-      setSelectedDevice('desktop');
-      const initialFiles = data.deviceVersions?.desktop?.files || data.files || [];
-      setOriginalFiles(JSON.parse(JSON.stringify(initialFiles)));
-      setEditedFiles(JSON.parse(JSON.stringify(initialFiles)));
-      // Automatically switch to the 3-Screen Live Preview as requested by user
-      setActiveTab('preview');
-    } catch (err: any) {
-      clearInterval(progressTimer);
-      setErrorMessage(err.message || 'An unexpected error occurred.');
-    } finally {
-      setIsLoading(false);
+        '*'
+      );
+      return;
     }
+
+    // 2. Custom HTML manually supplied in the Editor
+    if (customHtml && customHtml.trim()) {
+      try {
+        const parsed = parseHtmlInBrowser(customHtml, url, mode);
+        setResult(parsed);
+        const initialFiles = parsed.files || [];
+        setOriginalFiles(JSON.parse(JSON.stringify(initialFiles)));
+        setEditedFiles(JSON.parse(JSON.stringify(initialFiles)));
+        setActiveTab('preview');
+        setSelectedDevice('desktop');
+        setIsLoading(false);
+        return;
+      } catch (err: any) {
+        setIsLoading(false);
+        setErrorMessage(err.message || 'Failed to parse custom HTML.');
+        return;
+      }
+    }
+
+    // 3. Extension is not installed or enabled: Prompt user to load extension
+    setIsLoading(false);
+    setErrorMessage(
+      language === 'fa'
+        ? 'استخراج تمام فایل‌ها تماماً برعهده اکستنشن است. لطفاً افزونه را از بالای فرم (دکمه کروم یا فایرفاکس) دریافت و لود کنید، سپس دکمه استخراج کامل را بزنید.'
+        : 'All file extraction is handled by the browser extension. Please load the extension using the buttons above and click Full Extract.'
+    );
   };
 
   const handleSelectDevice = (dev: DeviceType) => {
@@ -362,6 +395,10 @@ export default function App() {
           targetUrl={activeScrapeUrl}
           mode={activeScrapeMode}
           language={language}
+          currentStep={currentProgressStep}
+          currentPercent={currentProgressPercent}
+          currentStatusText={currentProgressStatusText}
+          device={currentProgressDevice}
         />
 
         {/* Error Notification */}

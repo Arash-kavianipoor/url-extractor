@@ -70,11 +70,43 @@ export interface DeviceVersion {
 export interface ExtractedFile {
   id: string;
   name: string;
-  type: 'html' | 'css' | 'javascript' | 'json';
+  type: 'html' | 'css' | 'javascript' | 'json' | 'image' | 'font' | 'media' | 'other';
   content: string;
   size: number;
   sourceUrl?: string;
   description?: string;
+  binaryData?: string; // base64 string for images, fonts, binaries
+  status?: 'available' | 'external' | 'unavailable';
+  device?: DeviceType;
+}
+
+export type ExtensionStatus =
+  | 'NOT_INSTALLED'
+  | 'CONNECTED'
+  | 'READY'
+  | 'BUSY'
+  | 'COMPLETED'
+  | 'ERROR';
+
+export type ExtractionStep =
+  | 'Connecting'
+  | 'Opening Target'
+  | 'Rendering Desktop'
+  | 'Extracting Desktop'
+  | 'Rendering Tablet'
+  | 'Extracting Tablet'
+  | 'Rendering Mobile'
+  | 'Extracting Mobile'
+  | 'Collecting Assets'
+  | 'Building Result'
+  | 'Completed';
+
+export interface ExtractionProgressPayload {
+  requestId: string;
+  step: ExtractionStep;
+  percent: number;
+  statusText: string;
+  device?: DeviceType;
 }
 
 export interface ScrapeResult {
