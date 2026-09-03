@@ -1,0 +1,15 @@
+name = "web-link-and-code-extractor"
+main = "worker.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Path to the built frontend static assets
+[assets]
+directory = "./dist"
+
+# If a real database has not yet been created,
+# keep this section commented out to avoid error 10021:
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "web-link-extractor-db"
+# database_id = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"

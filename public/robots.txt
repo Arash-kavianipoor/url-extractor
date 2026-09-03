@@ -1,0 +1,7 @@
+# Production Robots Exclusion Policy
+# Conforms to SEO specification
+User-agent: *
+Allow: /
+
+# Sitemap Index for all 20 language endpoints
+Sitemap: https://weblink-extractor.pages.dev/sitemap.xml

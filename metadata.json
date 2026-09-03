@@ -1,0 +1,6 @@
+{
+  "name": "Web Link & Code Extractor",
+  "description": "Extract links, HTML, CSS, and JavaScript from single web pages or entire sites with an integrated code editor and ZIP export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
