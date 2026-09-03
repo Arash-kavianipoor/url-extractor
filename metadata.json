@@ -1,6 +1,6 @@
 {
-  "name": "Web Link & Code Extractor",
-  "description": "Extract links, HTML, CSS, and JavaScript with client-side in-browser scraping and real-time 3-device viewport display (Desktop, Tablet, Mobile).",
+  "name": "Web Scraper",
+  "description": "Extract structured data, test CSS selectors, inspect page elements, and generate scraper code from any website.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

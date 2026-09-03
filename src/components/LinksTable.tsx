@@ -10,8 +10,11 @@ import {
   Heading,
   X,
   SlidersHorizontal,
+  Laptop,
+  Tablet,
+  Smartphone,
 } from 'lucide-react';
-import { ScrapedLink, ScrapedHeading, HeadingLevel, Language, LinkType } from '../types.js';
+import { ScrapedLink, ScrapedHeading, HeadingLevel, Language, LinkType, DeviceType } from '../types.js';
 import { translations, isRtlLanguage } from '../i18n.js';
 import { exportLinksToCsv, exportHeadingsToCsv, exportCustomJson } from '../utils/exporter.js';
 
@@ -20,6 +23,7 @@ interface LinksTableProps {
   headings?: ScrapedHeading[];
   language: Language;
   initialSubTab?: 'links' | 'headings';
+  activeDevice?: DeviceType;
 }
 
 export const LinksTable: React.FC<LinksTableProps> = ({
@@ -27,8 +31,12 @@ export const LinksTable: React.FC<LinksTableProps> = ({
   headings = [],
   language,
   initialSubTab = 'links',
+  activeDevice,
 }) => {
   const [activeSection, setActiveSection] = useState<'links' | 'headings'>(initialSubTab);
+
+  // Device filter state (all, desktop, tablet, mobile)
+  const [deviceFilter, setDeviceFilter] = useState<'all' | DeviceType>('all');
 
   // Links filter state
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,6 +73,26 @@ export const LinksTable: React.FC<LinksTableProps> = ({
     }
   }, [initialSubTab]);
 
+  // Counts of links per device
+  const deviceLinkCounts = useMemo(() => {
+    return {
+      all: links.length,
+      desktop: links.filter((l) => !l.devices || l.devices.includes('desktop')).length,
+      tablet: links.filter((l) => l.devices?.includes('tablet')).length,
+      mobile: links.filter((l) => l.devices?.includes('mobile')).length,
+    };
+  }, [links]);
+
+  // Counts of headings per device
+  const deviceHeadingCounts = useMemo(() => {
+    return {
+      all: headings.length,
+      desktop: headings.filter((h) => !h.devices || h.devices.includes('desktop')).length,
+      tablet: headings.filter((h) => h.devices?.includes('tablet')).length,
+      mobile: headings.filter((h) => h.devices?.includes('mobile')).length,
+    };
+  }, [headings]);
+
   // Filtered links
   const filteredLinks = useMemo(() => {
     return links.filter((link) => {
@@ -75,9 +103,15 @@ export const LinksTable: React.FC<LinksTableProps> = ({
         link.sourceUrl.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesType = typeFilter === 'all' || link.type === typeFilter;
-      return matchesSearch && matchesType;
+
+      const matchesDevice =
+        deviceFilter === 'all' ||
+        (deviceFilter === 'desktop' && (!link.devices || link.devices.includes('desktop'))) ||
+        (link.devices && link.devices.includes(deviceFilter));
+
+      return matchesSearch && matchesType && matchesDevice;
     });
-  }, [links, searchTerm, typeFilter]);
+  }, [links, searchTerm, typeFilter, deviceFilter]);
 
   const totalPages = Math.ceil(filteredLinks.length / itemsPerPage) || 1;
   const paginatedLinks = filteredLinks.slice(
@@ -95,9 +129,15 @@ export const LinksTable: React.FC<LinksTableProps> = ({
         h.sourceUrl.toLowerCase().includes(headingSearchTerm.toLowerCase());
 
       const matchesLevel = headingLevelFilter === 'all' || h.level === headingLevelFilter;
-      return matchesSearch && matchesLevel;
+
+      const matchesDevice =
+        deviceFilter === 'all' ||
+        (deviceFilter === 'desktop' && (!h.devices || h.devices.includes('desktop'))) ||
+        (h.devices && h.devices.includes(deviceFilter));
+
+      return matchesSearch && matchesLevel && matchesDevice;
     });
-  }, [headings, headingSearchTerm, headingLevelFilter]);
+  }, [headings, headingSearchTerm, headingLevelFilter, deviceFilter]);
 
   const totalHeadingPages = Math.ceil(filteredHeadings.length / itemsPerPage) || 1;
   const paginatedHeadings = filteredHeadings.slice(
@@ -361,6 +401,87 @@ export const LinksTable: React.FC<LinksTableProps> = ({
           </div>
         </div>
 
+        {/* Multi-Device Filter Bar */}
+        <div className="flex items-center gap-2 p-1.5 bg-slate-950/70 border border-slate-800 rounded-xl flex-wrap">
+          <span className="text-[11px] font-semibold text-slate-400 px-2 flex items-center gap-1">
+            {language === 'fa' ? 'فیلتر بر اساس دستگاه:' : 'Device Filter:'}
+          </span>
+          <button
+            onClick={() => {
+              setDeviceFilter('all');
+              setCurrentPage(1);
+              setHeadingCurrentPage(1);
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg font-medium transition cursor-pointer ${
+              deviceFilter === 'all'
+                ? 'bg-slate-700 text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <span>{language === 'fa' ? 'همه دستگاه‌ها' : 'All Devices'}</span>
+            <span className="text-[10px] font-mono px-1 rounded bg-slate-900 text-slate-300">
+              {activeSection === 'links' ? deviceLinkCounts.all : deviceHeadingCounts.all}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setDeviceFilter('desktop');
+              setCurrentPage(1);
+              setHeadingCurrentPage(1);
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg font-medium transition cursor-pointer ${
+              deviceFilter === 'desktop'
+                ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Laptop className="w-3.5 h-3.5 text-sky-400" />
+            <span>{language === 'fa' ? 'دسکتاپ' : 'Desktop'}</span>
+            <span className="text-[10px] font-mono px-1 rounded bg-slate-900 text-sky-300">
+              {activeSection === 'links' ? deviceLinkCounts.desktop : deviceHeadingCounts.desktop}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setDeviceFilter('tablet');
+              setCurrentPage(1);
+              setHeadingCurrentPage(1);
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg font-medium transition cursor-pointer ${
+              deviceFilter === 'tablet'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Tablet className="w-3.5 h-3.5 text-amber-400" />
+            <span>{language === 'fa' ? 'تبلت' : 'Tablet'}</span>
+            <span className="text-[10px] font-mono px-1 rounded bg-slate-900 text-amber-300">
+              {activeSection === 'links' ? deviceLinkCounts.tablet : deviceHeadingCounts.tablet}
+            </span>
+          </button>
+
+          <button
+            onClick={() => {
+              setDeviceFilter('mobile');
+              setCurrentPage(1);
+              setHeadingCurrentPage(1);
+            }}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg font-medium transition cursor-pointer ${
+              deviceFilter === 'mobile'
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Smartphone className="w-3.5 h-3.5 text-rose-400" />
+            <span>{language === 'fa' ? 'موبایل' : 'Mobile'}</span>
+            <span className="text-[10px] font-mono px-1 rounded bg-slate-900 text-rose-300">
+              {activeSection === 'links' ? deviceLinkCounts.mobile : deviceHeadingCounts.mobile}
+            </span>
+          </button>
+        </div>
+
         {/* Filter Pills based on active view */}
         {activeSection === 'links' ? (
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -485,6 +606,9 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                   <th className="py-3 px-3.5 min-w-[180px]">{t.colText}</th>
                   <th className="py-3 px-3.5 min-w-[280px]">{t.colUrl}</th>
                   <th className="py-3 px-3.5 w-24 text-center">{t.colType}</th>
+                  <th className="py-3 px-3.5 min-w-[140px] text-center">
+                    {language === 'fa' ? 'دستگاه‌ها' : 'Devices'}
+                  </th>
                   <th className="py-3 px-3.5 min-w-[160px] hidden md:table-cell">{t.colSource}</th>
                   <th className="py-3 px-3.5 w-20 text-center">{t.colActions}</th>
                 </tr>
@@ -492,6 +616,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
               <tbody className="divide-y divide-slate-800/60">
                 {paginatedLinks.map((link, idx) => {
                   const globalIndex = (currentPage - 1) * itemsPerPage + idx + 1;
+                  const linkDevs = link.devices || ['desktop'];
                   return (
                     <tr key={link.id} className="hover:bg-slate-800/40 transition-colors">
                       <td className="py-2.5 px-3.5 font-mono text-center text-slate-500">
@@ -518,6 +643,45 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                         >
                           {link.type}
                         </span>
+                      </td>
+                      <td className="py-2.5 px-3.5 text-center">
+                        <div className="flex items-center justify-center gap-1 flex-wrap">
+                          {linkDevs.map((dev) => (
+                            <span
+                              key={dev}
+                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border ${
+                                dev === 'desktop'
+                                  ? 'bg-sky-950/60 text-sky-300 border-sky-500/40'
+                                  : dev === 'tablet'
+                                  ? 'bg-amber-950/60 text-amber-300 border-amber-500/40'
+                                  : 'bg-rose-950/60 text-rose-300 border-rose-500/40'
+                              }`}
+                              title={`Found on ${dev}`}
+                            >
+                              {dev === 'desktop' && <Laptop className="w-2.5 h-2.5" />}
+                              {dev === 'tablet' && <Tablet className="w-2.5 h-2.5" />}
+                              {dev === 'mobile' && <Smartphone className="w-2.5 h-2.5" />}
+                              <span className="capitalize">
+                                {dev === 'desktop'
+                                  ? language === 'fa'
+                                    ? 'دسکتاپ'
+                                    : 'Desktop'
+                                  : dev === 'tablet'
+                                  ? language === 'fa'
+                                    ? 'تبلت'
+                                    : 'Tablet'
+                                  : language === 'fa'
+                                  ? 'موبایل'
+                                  : 'Mobile'}
+                              </span>
+                            </span>
+                          ))}
+                          {linkDevs.length === 1 && (
+                            <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              {language === 'fa' ? 'اختصاصی' : 'Exclusive'}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td
                         className="py-2.5 px-3.5 font-mono text-[11px] text-slate-500 max-w-[180px] truncate hidden md:table-cell"
@@ -567,6 +731,9 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                   <th className="py-3 px-3.5 w-12 text-center">{t.colIndex}</th>
                   <th className="py-3 px-3.5 w-20 text-center">{t.colHeadingLevel}</th>
                   <th className="py-3 px-3.5 min-w-[280px]">{t.colHeadingText}</th>
+                  <th className="py-3 px-3.5 min-w-[140px] text-center">
+                    {language === 'fa' ? 'دستگاه‌ها' : 'Devices'}
+                  </th>
                   <th className="py-3 px-3.5 min-w-[180px] hidden md:table-cell">{t.colSource}</th>
                   <th className="py-3 px-3.5 w-20 text-center">{t.colActions}</th>
                 </tr>
@@ -575,6 +742,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                 {paginatedHeadings.map((heading, idx) => {
                   const globalIndex =
                     (headingCurrentPage - 1) * itemsPerPage + idx + 1;
+                  const headingDevs = heading.devices || ['desktop'];
                   return (
                     <tr
                       key={heading.id}
@@ -603,6 +771,45 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                           }`}
                         >
                           {heading.text}
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3.5 text-center">
+                        <div className="flex items-center justify-center gap-1 flex-wrap">
+                          {headingDevs.map((dev) => (
+                            <span
+                              key={dev}
+                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border ${
+                                dev === 'desktop'
+                                  ? 'bg-sky-950/60 text-sky-300 border-sky-500/40'
+                                  : dev === 'tablet'
+                                  ? 'bg-amber-950/60 text-amber-300 border-amber-500/40'
+                                  : 'bg-rose-950/60 text-rose-300 border-rose-500/40'
+                              }`}
+                              title={`Found on ${dev}`}
+                            >
+                              {dev === 'desktop' && <Laptop className="w-2.5 h-2.5" />}
+                              {dev === 'tablet' && <Tablet className="w-2.5 h-2.5" />}
+                              {dev === 'mobile' && <Smartphone className="w-2.5 h-2.5" />}
+                              <span className="capitalize">
+                                {dev === 'desktop'
+                                  ? language === 'fa'
+                                    ? 'دسکتاپ'
+                                    : 'Desktop'
+                                  : dev === 'tablet'
+                                  ? language === 'fa'
+                                    ? 'تبلت'
+                                    : 'Tablet'
+                                  : language === 'fa'
+                                  ? 'موبایل'
+                                  : 'Mobile'}
+                              </span>
+                            </span>
+                          ))}
+                          {headingDevs.length === 1 && (
+                            <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                              {language === 'fa' ? 'اختصاصی' : 'Exclusive'}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td

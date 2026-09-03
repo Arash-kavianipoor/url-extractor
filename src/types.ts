@@ -42,6 +42,7 @@ export interface ScrapedHeading {
   sourceUrl: string;
   pageTitle?: string;
   index: number;
+  devices?: DeviceType[];
 }
 
 export interface ScrapedLink {
@@ -50,9 +51,26 @@ export interface ScrapedLink {
   text: string;
   type: LinkType;
   sourceUrl: string;
+  devices?: DeviceType[];
 }
 
 export type DeviceType = 'desktop' | 'tablet' | 'mobile';
+
+export interface DeviceProfileInfo {
+  name: string;
+  nameFa: string;
+  userAgent: string;
+  secChUa: string;
+  secChUaMobile: string;
+  secChUaPlatform: string;
+  secChUaPlatformVersion?: string;
+  secChUaModel?: string;
+  viewport: string;
+  resolution: string;
+  previewWidth: number;
+  previewHeight: number;
+  dpr: number;
+}
 
 export interface DeviceVersion {
   device: DeviceType;
@@ -61,52 +79,33 @@ export interface DeviceVersion {
   totalBytes: number;
   viewport: string;
   userAgent: string;
+  profileInfo?: DeviceProfileInfo;
   links?: ScrapedLink[];
   headings?: ScrapedHeading[];
   headingsCount?: Record<HeadingLevel, number>;
-  rawHtml?: string;
+  totalLinksFound?: number;
+  internalLinksCount?: number;
+  externalLinksCount?: number;
+  uniqueLinksCount?: number;
+}
+
+export interface DeviceComparison {
+  totalLinks: Record<DeviceType, number>;
+  totalHeadings: Record<DeviceType, number>;
+  totalPayloadBytes: Record<DeviceType, number>;
+  uniqueLinksCount: Record<DeviceType, number>;
+  commonLinksCount: number;
+  differencesDetected: boolean;
 }
 
 export interface ExtractedFile {
   id: string;
   name: string;
-  type: 'html' | 'css' | 'javascript' | 'json' | 'image' | 'font' | 'media' | 'other';
+  type: 'html' | 'css' | 'javascript' | 'json';
   content: string;
   size: number;
   sourceUrl?: string;
   description?: string;
-  binaryData?: string; // base64 string for images, fonts, binaries
-  status?: 'available' | 'external' | 'unavailable';
-  device?: DeviceType;
-}
-
-export type ExtensionStatus =
-  | 'NOT_INSTALLED'
-  | 'CONNECTED'
-  | 'READY'
-  | 'BUSY'
-  | 'COMPLETED'
-  | 'ERROR';
-
-export type ExtractionStep =
-  | 'Connecting'
-  | 'Opening Target'
-  | 'Rendering Desktop'
-  | 'Extracting Desktop'
-  | 'Rendering Tablet'
-  | 'Extracting Tablet'
-  | 'Rendering Mobile'
-  | 'Extracting Mobile'
-  | 'Collecting Assets'
-  | 'Building Result'
-  | 'Completed';
-
-export interface ExtractionProgressPayload {
-  requestId: string;
-  step: ExtractionStep;
-  percent: number;
-  statusText: string;
-  device?: DeviceType;
 }
 
 export interface ScrapeResult {
@@ -124,6 +123,7 @@ export interface ScrapeResult {
   headingsCount: Record<HeadingLevel, number>;
   files: ExtractedFile[];
   deviceVersions?: Record<DeviceType, DeviceVersion>;
+  deviceComparison?: DeviceComparison;
   scannedUrls: string[];
   executionTimeMs: number;
 }

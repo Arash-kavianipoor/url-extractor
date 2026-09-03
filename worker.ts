@@ -11,9 +11,11 @@ export interface ExecutionContext {
   passThroughOnException(): void;
 }
 
+export type D1Database = any;
+
 export interface Env {
   ASSETS: Fetcher;
-  DB?: unknown;
+  DB?: D1Database;
   ENVIRONMENT?: string;
 }
 
@@ -73,66 +75,6 @@ export default {
             },
           }
         );
-      }
-
-      // Lightweight 1-request proxy pass-through with realistic device headers (Zero CPU / bypasses Cloudflare 50 subrequests limit)
-      if (url.pathname === '/api/proxy') {
-        const targetUrl = url.searchParams.get('url');
-        const device = (url.searchParams.get('device') || 'desktop').toLowerCase();
-        if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
-          return new Response(JSON.stringify({ error: 'Valid URL parameter required' }), {
-            status: 400,
-            headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
-          });
-        }
-
-        const devHeaders: Record<string, string> =
-          device === 'mobile'
-            ? {
-                'User-Agent':
-                  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
-                'Sec-CH-UA-Mobile': '?1',
-                'Sec-CH-UA-Platform': '"iOS"',
-                'Viewport-Width': '390',
-                Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-              }
-            : device === 'tablet'
-            ? {
-                'User-Agent':
-                  'Mozilla/5.0 (iPad; CPU OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
-                'Sec-CH-UA-Mobile': '?1',
-                'Sec-CH-UA-Platform': '"macOS"',
-                'Viewport-Width': '768',
-                Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-              }
-            : {
-                'User-Agent':
-                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
-                'Sec-CH-UA-Mobile': '?0',
-                'Sec-CH-UA-Platform': '"Windows"',
-                'Viewport-Width': '1280',
-                Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-              };
-
-        try {
-          const resp = await fetch(targetUrl, {
-            headers: devHeaders,
-            redirect: 'follow',
-          });
-          const text = await resp.text();
-          return new Response(text, {
-            status: resp.status,
-            headers: {
-              'Content-Type': 'text/html; charset=utf-8',
-              ...CORS_HEADERS,
-            },
-          });
-        } catch (err: any) {
-          return new Response(JSON.stringify({ error: err.message || 'Proxy fetch failed' }), {
-            status: 502,
-            headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
-          });
-        }
       }
 
       // Scrape endpoint

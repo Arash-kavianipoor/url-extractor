@@ -29,37 +29,52 @@ export async function downloadZip(
 ) {
   const zip = new JSZip();
 
-  // Create standard folder structure
-  zip.folder('css');
-  zip.folder('js');
-  zip.folder('images');
-  zip.folder('fonts');
-  zip.folder('assets');
+  if (mode === 'single') {
+    // Single page mode: strictly NO folders at all, all files at the root of the ZIP
+    for (const file of files) {
+      const cleanName = file.name.replace(/^.*[\\/]/, '');
+      zip.file(cleanName, file.content);
+    }
+  } else {
+    // Multi-page crawl mode ('all'): Maintain dedicated folder structure for each page
+    const stylesFile = files.find((f) => f.name === 'styles.css');
+    const scriptsFile = files.find((f) => f.name === 'scripts.js');
+    const htmlPages = files.filter((f) => f.type === 'html' && f.name !== 'links_report.html');
 
-  for (const file of files) {
-    const rawName = file.name;
-    const cleanName = rawName.replace(/^.*[\\/]/, '');
+    // 1. Root files: index.html, styles.css, scripts.js for instant multi-page preview & execution
+    for (const file of files) {
+      const cleanName = file.name.replace(/^.*[\\/]/, '');
+      zip.file(cleanName, file.content);
+    }
 
-    if (cleanName === 'index.html') {
-      zip.file('index.html', file.content);
-    } else if (file.type === 'css' || cleanName.endsWith('.css')) {
-      zip.file(`css/${cleanName}`, file.content);
-    } else if (file.type === 'javascript' || cleanName.endsWith('.js')) {
-      zip.file(`js/${cleanName}`, file.content);
-    } else if (file.type === 'image' || /\.(png|jpe?g|gif|webp|svg|ico)$/i.test(cleanName)) {
-      if (file.binaryData) {
-        zip.file(`images/${cleanName}`, file.binaryData, { base64: true });
-      } else {
-        zip.file(`images/${cleanName}`, file.content);
+    // 2. Dedicated folder for EACH scanned page: pages/01_home/, pages/02_about/, etc.
+    htmlPages.forEach((file, index) => {
+      const pageIndex = (index + 1).toString().padStart(2, '0');
+      let baseSlug = file.name.replace(/\.html$/i, '').replace(/^.*[\\/]/, '');
+      if (baseSlug === 'index' || index === 0) {
+        baseSlug = 'home';
       }
-    } else if (file.type === 'font' || /\.(woff2?|ttf|otf|eot)$/i.test(cleanName)) {
-      if (file.binaryData) {
-        zip.file(`fonts/${cleanName}`, file.binaryData, { base64: true });
-      } else {
-        zip.file(`fonts/${cleanName}`, file.content);
+      const pageFolderName = `pages/${pageIndex}_${baseSlug}`;
+
+      // Place the page's HTML inside its dedicated folder
+      zip.file(`${pageFolderName}/index.html`, file.content);
+
+      // Include styles and scripts in each page folder so that each page is 100% self-contained
+      if (stylesFile) {
+        zip.file(`${pageFolderName}/styles.css`, stylesFile.content);
       }
-    } else {
-      zip.file(`assets/${cleanName}`, file.content);
+      if (scriptsFile) {
+        zip.file(`${pageFolderName}/scripts.js`, scriptsFile.content);
+      }
+    });
+
+    // 3. Dedicated reports folder
+    const reports = files.filter(
+      (f) => f.name === 'links_report.html' || f.name.endsWith('.json')
+    );
+    for (const report of reports) {
+      const cleanName = report.name.replace(/^.*[\\/]/, '');
+      zip.file(`reports/${cleanName}`, report.content);
     }
   }
 
@@ -95,39 +110,9 @@ export async function downloadAllDevicesBundle(
     const devData = deviceVersions[dev];
     if (!devData || !devData.files) continue;
     const folder = dev;
-
-    // Create device subfolders: css, js, images, fonts, assets
-    zip.folder(`${folder}/css`);
-    zip.folder(`${folder}/js`);
-    zip.folder(`${folder}/images`);
-    zip.folder(`${folder}/fonts`);
-    zip.folder(`${folder}/assets`);
-
     for (const file of devData.files) {
-      const rawName = file.name;
-      const cleanName = rawName.replace(/^.*[\\/]/, '');
-
-      if (cleanName === 'index.html' || cleanName === `${dev}.html`) {
-        zip.file(`${folder}/index.html`, file.content);
-      } else if (file.type === 'css' || cleanName.endsWith('.css')) {
-        zip.file(`${folder}/css/${cleanName}`, file.content);
-      } else if (file.type === 'javascript' || cleanName.endsWith('.js')) {
-        zip.file(`${folder}/js/${cleanName}`, file.content);
-      } else if (file.type === 'image' || /\.(png|jpe?g|gif|webp|svg|ico)$/i.test(cleanName)) {
-        if (file.binaryData) {
-          zip.file(`${folder}/images/${cleanName}`, file.binaryData, { base64: true });
-        } else {
-          zip.file(`${folder}/images/${cleanName}`, file.content);
-        }
-      } else if (file.type === 'font' || /\.(woff2?|ttf|otf|eot)$/i.test(cleanName)) {
-        if (file.binaryData) {
-          zip.file(`${folder}/fonts/${cleanName}`, file.binaryData, { base64: true });
-        } else {
-          zip.file(`${folder}/fonts/${cleanName}`, file.content);
-        }
-      } else {
-        zip.file(`${folder}/assets/${cleanName}`, file.content);
-      }
+      const cleanName = file.name.replace(/^.*[\\/]/, '');
+      zip.file(`${folder}/${cleanName}`, file.content);
     }
   }
 

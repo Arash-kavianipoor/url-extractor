@@ -15,7 +15,7 @@ import {
   Tablet,
   Smartphone
 } from 'lucide-react';
-import { Language, CrawlMode, ScrapeResult, ExtractedFile, DeviceType, ExtensionStatus, ExtractionStep } from './types.js';
+import { Language, CrawlMode, ScrapeResult, ExtractedFile, DeviceType } from './types.js';
 import { translations, isRtlLanguage } from './i18n.js';
 import { Header } from './components/Header.js';
 import { ScraperForm } from './components/ScraperForm.js';
@@ -25,7 +25,6 @@ import { CodeEditor } from './components/CodeEditor.js';
 import { LivePreview } from './components/LivePreview.js';
 import { FetchProgressBar } from './components/FetchProgressBar.js';
 import { downloadZip, downloadAllDevicesBundle } from './utils/exporter.js';
-import { parseHtmlInBrowser, fetchTargetHtmlInBrowser, fetchMultiDeviceHtmlInBrowser } from './utils/clientScraper.js';
 import { updateDocumentSeo } from './seo/seoManager.js';
 import { SEO_LANGUAGES } from './seo/seoConfig.js';
 
@@ -68,19 +67,8 @@ export default function App() {
   const [selectedDevice, setSelectedDevice] = useState<DeviceType>('desktop');
   const [editedFiles, setEditedFiles] = useState<ExtractedFile[]>([]);
   const [originalFiles, setOriginalFiles] = useState<ExtractedFile[]>([]);
-  const [activeTab, setActiveTab] = useState<'links' | 'headings' | 'editor' | 'preview'>('preview');
+  const [activeTab, setActiveTab] = useState<'links' | 'headings' | 'editor' | 'preview'>('links');
   const [isZippingAll, setIsZippingAll] = useState<boolean>(false);
-  const [extensionStatus, setExtensionStatus] = useState<ExtensionStatus>('NOT_INSTALLED');
-  const [extensionBrowser, setExtensionBrowser] = useState<string>('');
-  const [currentProgressStep, setCurrentProgressStep] = useState<ExtractionStep>('Connecting');
-  const [currentProgressPercent, setCurrentProgressPercent] = useState<number>(0);
-  const [currentProgressStatusText, setCurrentProgressStatusText] = useState<string>('');
-  const [currentProgressDevice, setCurrentProgressDevice] = useState<DeviceType>('desktop');
-  const [deviceProgress, setDeviceProgress] = useState<Partial<Record<DeviceType, { status: string; percent: number }>>>({
-    desktop: { status: 'آماده', percent: 0 },
-    tablet: { status: 'آماده', percent: 0 },
-    mobile: { status: 'آماده', percent: 0 },
-  });
 
   const t = translations[language];
   const isRtl = isRtlLanguage(language);
@@ -88,88 +76,6 @@ export default function App() {
   // Sync document SEO tags, hreflangs, canonical, JSON-LD, html lang and dir
   useEffect(() => {
     updateDocumentSeo(language);
-  }, [language]);
-
-  // Bi-directional event communication with the extraction extension
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (!event.data || typeof event.data !== 'object') return;
-
-      // Extension Ready / Status
-      if (
-        event.data.type === 'EXTENSION_READY' ||
-        (event.data.type === 'EXTENSION_STATUS' &&
-          (event.data.status === 'ready' || event.data.message === 'I am ready'))
-      ) {
-        setExtensionStatus('READY');
-        if (event.data.browser) {
-          setExtensionBrowser(event.data.browser);
-        }
-      }
-
-      // Real Real-time Progress Tracking from the Extension
-      if (event.data.type === 'EXTRACTION_PROGRESS') {
-        const { step, percent, statusText, device } = event.data;
-        if (step) setCurrentProgressStep(step);
-        if (typeof percent === 'number') setCurrentProgressPercent(percent);
-        if (statusText) setCurrentProgressStatusText(statusText);
-        if (device) setCurrentProgressDevice(device);
-
-        const targetDev: DeviceType = device || 'desktop';
-        setDeviceProgress((prev) => ({
-          ...prev,
-          [targetDev]: {
-            status: statusText || step || 'در حال رندر...',
-            percent: typeof percent === 'number' ? percent : 50,
-          },
-        }));
-      }
-
-      // Full Extraction Complete from Extension
-      if (
-        (event.data.type === 'EXTRACTION_COMPLETE' ||
-          event.data.type === 'EXTENSION_EXTRACTION_COMPLETE') &&
-        event.data.data
-      ) {
-        setIsLoading(false);
-        setExtensionStatus('COMPLETED');
-        setCurrentProgressStep('Completed');
-        setCurrentProgressPercent(100);
-        setCurrentProgressStatusText(
-          language === 'fa' ? 'استخراج با موفقیت تکمیل شد' : 'Extraction completed successfully'
-        );
-        handleExtensionResult(event.data.data);
-      }
-
-      // Error from Extension
-      if (
-        event.data.type === 'EXTRACTION_ERROR' ||
-        event.data.type === 'EXTENSION_EXTRACTION_ERROR'
-      ) {
-        setIsLoading(false);
-        setExtensionStatus('ERROR');
-        setErrorMessage(event.data.error || 'Extension extraction encountered an error.');
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-
-    // Initial ping to extension
-    window.postMessage({ type: 'EXTENSION_PING' }, '*');
-    window.postMessage({ type: 'PING_EXTENSION' }, '*');
-    const pingTimer = setInterval(() => {
-      window.postMessage({ type: 'EXTENSION_PING' }, '*');
-      window.postMessage({ type: 'PING_EXTENSION' }, '*');
-    }, 2000);
-
-    if ((window as any).__WEB_SCRAPER_EXTENSION_READY__) {
-      setExtensionStatus('READY');
-    }
-
-    return () => {
-      window.removeEventListener('message', handleMessage);
-      clearInterval(pingTimer);
-    };
   }, [language]);
 
   // Sync theme with localStorage and document root
@@ -208,101 +114,59 @@ export default function App() {
     }
   };
 
-  const handleExtensionResult = (extResult: ScrapeResult) => {
-    setResult(extResult);
-    const initialFiles = extResult.deviceVersions?.desktop?.files || extResult.files || [];
-    setOriginalFiles(JSON.parse(JSON.stringify(initialFiles)));
-    setEditedFiles(JSON.parse(JSON.stringify(initialFiles)));
-    setActiveTab('preview');
-    setSelectedDevice('desktop');
-    setErrorMessage(null);
-  };
-
-  const handleScrape = async (
-    url: string,
-    mode: CrawlMode,
-    maxPages: number,
-    customHtml?: string
-  ) => {
+  const handleScrape = async (url: string, mode: CrawlMode, maxPages: number) => {
     setIsLoading(true);
     setActiveScrapeUrl(url);
     setActiveScrapeMode(mode);
     setErrorMessage(null);
-    setCurrentProgressStep('Connecting');
-    setCurrentProgressPercent(5);
-    setCurrentProgressStatusText(
-      language === 'fa' ? 'اتصال به اکستنشن استخراج...' : 'Connecting to extraction extension...'
-    );
 
-    setDeviceProgress({
-      desktop: {
-        status: language === 'fa' ? 'اتصال به اکستنشن...' : 'Connecting...',
-        percent: 5,
-      },
-      tablet: {
-        status: language === 'fa' ? 'در صف...' : 'Queued...',
-        percent: 0,
-      },
-      mobile: {
-        status: language === 'fa' ? 'در صف...' : 'Queued...',
-        percent: 0,
-      },
-    });
-
-    // 1. Primary Engine: Browser Extension executes the entire multi-device DOM extraction
-    const isExtReady =
-      extensionStatus === 'READY' ||
-      extensionStatus === 'BUSY' ||
-      Boolean((window as any).__WEB_SCRAPER_EXTENSION_READY__);
-
-    if (isExtReady) {
-      setExtensionStatus('BUSY');
-      const reqId = 'req_' + Date.now();
-      window.postMessage(
-        {
-          type: 'START_EXTRACTION',
-          requestId: reqId,
-          targetUrl: url,
-          devices: ['desktop', 'tablet', 'mobile'],
+    try {
+      const response = await fetch('/api/scrape', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        '*'
-      );
-      window.postMessage(
-        {
-          type: 'REQUEST_FULL_URL_EXTRACTION',
-          targetUrl: url,
-        },
-        '*'
-      );
-      return;
-    }
+        body: JSON.stringify({ url, mode, maxPages }),
+      });
 
-    // 2. Custom HTML manually supplied in the Editor
-    if (customHtml && customHtml.trim()) {
-      try {
-        const parsed = parseHtmlInBrowser(customHtml, url, mode);
-        setResult(parsed);
-        const initialFiles = parsed.files || [];
-        setOriginalFiles(JSON.parse(JSON.stringify(initialFiles)));
-        setEditedFiles(JSON.parse(JSON.stringify(initialFiles)));
-        setActiveTab('preview');
-        setSelectedDevice('desktop');
-        setIsLoading(false);
-        return;
-      } catch (err: any) {
-        setIsLoading(false);
-        setErrorMessage(err.message || 'Failed to parse custom HTML.');
-        return;
+      if (!response.ok) {
+        let errMessage = '';
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          try {
+            const errorJson = await response.json();
+            errMessage = errorJson.error;
+          } catch {
+            errMessage = `HTTP ${response.status}: Failed to scrape target URL.`;
+          }
+        } else {
+          // Cloudflare HTML error pages (e.g., 503 Worker subrequest/CPU limit)
+          if (response.status === 503) {
+            errMessage =
+              language === 'fa'
+                ? 'خطای ۵۰۳ سرویس کلودفلر: ورکر به محدودیت ۵۰ ریکوئست یا زمان پردازش CPU رسید یا سایت هدف دسترسی ربات را مسدود کرده است.'
+                : 'Cloudflare 503 Service Unavailable: The worker exceeded subrequest/CPU limits or the target site blocked access.';
+          } else {
+            errMessage = `HTTP ${response.status} (${response.statusText || 'Server Error'})`;
+          }
+        }
+        throw new Error(errMessage || 'Failed to fetch the target URL.');
       }
-    }
 
-    // 3. Extension is not installed or enabled: Prompt user to load extension
-    setIsLoading(false);
-    setErrorMessage(
-      language === 'fa'
-        ? 'استخراج تمام فایل‌ها تماماً برعهده اکستنشن است. لطفاً افزونه را از بالای فرم (دکمه کروم یا فایرفاکس) دریافت و لود کنید، سپس دکمه استخراج کامل را بزنید.'
-        : 'All file extraction is handled by the browser extension. Please load the extension using the buttons above and click Full Extract.'
-    );
+      const data = await response.json();
+
+      setResult(data);
+      // Select desktop by default and load desktop files
+      setSelectedDevice('desktop');
+      const initialFiles = data.deviceVersions?.desktop?.files || data.files || [];
+      setOriginalFiles(JSON.parse(JSON.stringify(initialFiles)));
+      setEditedFiles(JSON.parse(JSON.stringify(initialFiles)));
+      setActiveTab('links');
+    } catch (err: any) {
+      setErrorMessage(err.message || 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSelectDevice = (dev: DeviceType) => {
@@ -385,7 +249,6 @@ export default function App() {
         <ScraperForm
           language={language}
           onScrape={handleScrape}
-          onExtensionResult={handleExtensionResult}
           isLoading={isLoading}
         />
 
@@ -395,10 +258,6 @@ export default function App() {
           targetUrl={activeScrapeUrl}
           mode={activeScrapeMode}
           language={language}
-          currentStep={currentProgressStep}
-          currentPercent={currentProgressPercent}
-          currentStatusText={currentProgressStatusText}
-          device={currentProgressDevice}
         />
 
         {/* Error Notification */}
@@ -496,19 +355,6 @@ export default function App() {
               {/* Tab Selection */}
               <div className="flex items-center gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-xl shadow-inner">
                 <button
-                  id="tab-preview-btn"
-                  onClick={() => setActiveTab('preview')}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    activeTab === 'preview'
-                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <Eye className="w-4 h-4 text-emerald-300" />
-                  <span>{t.tabPreview}</span>
-                </button>
-
-                <button
                   id="tab-links-btn"
                   onClick={() => setActiveTab('links')}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
@@ -554,6 +400,19 @@ export default function App() {
                   <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-purple-950/70 text-purple-300 border border-purple-500/30 font-bold">
                     {editedFiles.length}
                   </span>
+                </button>
+
+                <button
+                  id="tab-preview-btn"
+                  onClick={() => setActiveTab('preview')}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    activeTab === 'preview'
+                      ? 'bg-slate-800 text-white shadow-sm border border-slate-700/60'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Eye className="w-4 h-4 text-emerald-400" />
+                  <span>{t.tabPreview}</span>
                 </button>
               </div>
 
@@ -614,6 +473,7 @@ export default function App() {
                   headings={result.headings}
                   language={language}
                   initialSubTab={activeTab === 'headings' ? 'headings' : 'links'}
+                  activeDevice={selectedDevice}
                 />
               )}
 
@@ -634,32 +494,25 @@ export default function App() {
                   language={language}
                   currentDevice={selectedDevice}
                   onDeviceChange={handleSelectDevice}
-                  deviceVersions={result.deviceVersions}
-                  targetUrl={result.targetUrl}
-                  isLoading={isLoading}
-                  deviceProgress={deviceProgress}
-                  onQuickScrape={(u) => handleScrape(u, 'single', 1)}
                 />
               )}
             </div>
           </div>
         ) : (
-          /* Pre-Fetch & Standby State: 3 Device Browsers (Desktop / Tablet / Mobile) Are Displayed Immediately */
-          <div className="space-y-8">
-            <LivePreview
-              files={[]}
-              language={language}
-              currentDevice={selectedDevice}
-              onDeviceChange={handleSelectDevice}
-              targetUrl={activeScrapeUrl || 'https://example.com'}
-              isLoading={isLoading}
-              deviceProgress={deviceProgress}
-              onQuickScrape={(u) => handleScrape(u, 'single', 1)}
-            />
+          /* Empty Initial State / Guides */
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-8 sm:p-12 text-center shadow-xl shadow-black/20">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-950/60 border border-indigo-500/30 flex items-center justify-center mx-auto text-indigo-400 mb-4 shadow-lg shadow-indigo-950/50">
+              <Globe className="w-7 h-7" />
+            </div>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-100 mb-2">
+              {t.emptyStateTitle}
+            </h2>
+            <p className="text-sm text-slate-400 max-w-lg mx-auto mb-8 leading-relaxed">
+              {t.emptyStateDesc}
+            </p>
 
-            {/* Quick Tips and Capabilities Guide */}
-            <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto ${isRtl ? 'text-right' : 'text-left'}`}>
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between hover:border-slate-700 transition-colors">
+            <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto ${isRtl ? 'text-right' : 'text-left'}`}>
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/50 flex flex-col justify-between hover:border-slate-700 transition-colors">
                 <div className="flex items-center gap-2 font-semibold text-xs text-slate-200 mb-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>{t.tipLinkExtraction}</span>
@@ -669,7 +522,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between hover:border-slate-700 transition-colors">
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/50 flex flex-col justify-between hover:border-slate-700 transition-colors">
                 <div className="flex items-center gap-2 font-semibold text-xs text-slate-200 mb-1.5">
                   <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />
                   <span>{t.tipAssetsSourceCode}</span>
@@ -679,7 +532,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between hover:border-slate-700 transition-colors">
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/50 flex flex-col justify-between hover:border-slate-700 transition-colors">
                 <div className="flex items-center gap-2 font-semibold text-xs text-slate-200 mb-1.5">
                   <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
                   <span>{t.tipLiveEditorZip}</span>

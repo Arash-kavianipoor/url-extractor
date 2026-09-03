@@ -9,50 +9,57 @@ import {
   LinkType,
   DeviceType,
   DeviceVersion,
+  DeviceProfileInfo,
+  DeviceComparison,
 } from '../src/types.js';
 
-// Realistic Device Profiles for 3-way Browser Emulation
-export const DEVICE_PROFILES: Record<
-  DeviceType,
-  {
-    name: string;
-    userAgent: string;
-    secChUa: string;
-    secChUaMobile: string;
-    secChUaPlatform: string;
-    viewport: string;
-    previewWidth: number;
-  }
-> = {
+// Realistic Device Profiles for authentic 3-way Browser Emulation
+export const DEVICE_PROFILES: Record<DeviceType, DeviceProfileInfo> = {
   desktop: {
     name: 'Desktop',
+    nameFa: 'دسکتاپ (ویندوز / مک / لینوکس)',
     userAgent:
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
     secChUa: '"Not(A:Brand";v="99", "Google Chrome";v="133", "Chromium";v="133"',
     secChUaMobile: '?0',
     secChUaPlatform: '"Windows"',
+    secChUaPlatformVersion: '"15.0.0"',
     viewport: 'width=device-width, initial-scale=1.0',
+    resolution: '1920×1080',
     previewWidth: 1280,
+    previewHeight: 800,
+    dpr: 1,
   },
   tablet: {
     name: 'Tablet',
+    nameFa: 'تبلت (آیپد / تبلت اندروید)',
     userAgent:
       'Mozilla/5.0 (iPad; CPU OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
     secChUa: '"Not(A:Brand";v="99", "Apple Safari";v="17", "WebKit";v="605"',
     secChUaMobile: '?1',
-    secChUaPlatform: '"iOS"',
+    secChUaPlatform: '"macOS"',
+    secChUaPlatformVersion: '"17.4.0"',
     viewport: 'width=768, initial-scale=1.0, maximum-scale=2.0',
+    resolution: '768×1024',
     previewWidth: 768,
+    previewHeight: 1024,
+    dpr: 2,
   },
   mobile: {
     name: 'Mobile',
+    nameFa: 'موبایل هوشمند (اندروید / iOS)',
     userAgent:
       'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36',
     secChUa: '"Not(A:Brand";v="99", "Google Chrome";v="133", "Chromium";v="133"',
     secChUaMobile: '?1',
     secChUaPlatform: '"Android"',
+    secChUaPlatformVersion: '"14.0.0"',
+    secChUaModel: '"Pixel 8"',
     viewport: 'width=390, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes',
+    resolution: '390×844',
     previewWidth: 390,
+    previewHeight: 844,
+    dpr: 3,
   },
 };
 
@@ -142,11 +149,22 @@ function getBrowserHeaders(
 
   const headers: Record<string, string> = {
     'User-Agent': profile.userAgent,
-    'Accept-Language': 'en-US,en;q=0.9,fa;q=0.8',
+    'Accept-Language': 'fa-IR,fa;q=0.9,en-US;q=0.8,en;q=0.7',
     'Sec-Ch-Ua': profile.secChUa,
     'Sec-Ch-Ua-Mobile': profile.secChUaMobile,
     'Sec-Ch-Ua-Platform': profile.secChUaPlatform,
   };
+
+  if (profile.secChUaPlatformVersion) {
+    headers['Sec-Ch-Ua-Platform-Version'] = profile.secChUaPlatformVersion;
+  }
+  if (profile.secChUaModel) {
+    headers['Sec-Ch-Ua-Model'] = profile.secChUaModel;
+  }
+  headers['Sec-Ch-Viewport-Width'] = String(profile.previewWidth);
+  headers['Sec-Ch-Dpr'] = String(profile.dpr);
+  headers['Sec-Ch-Ua-Form-Factors'] =
+    device === 'desktop' ? '"Desktop"' : device === 'tablet' ? '"Tablet"' : '"Mobile"';
 
   if (resourceType === 'document') {
     headers['Accept'] =
@@ -565,8 +583,8 @@ async function processCssContent(
     }
   }
 
-  // Pre-fetch key fonts and images with concurrency pooling (top 80 priority font/icon/image assets)
-  await runWithConcurrency(distinctAssetPaths.slice(0, 80), 10, async (assetPath) => {
+  // Pre-fetch key fonts and images with concurrency pooling (top 20 priority assets)
+  await runWithConcurrency(distinctAssetPaths.slice(0, 20), 8, async (assetPath) => {
     if (!tracker.canFetch()) return;
     try {
       const resolvedAssetUrl = new URL(assetPath, cssBaseUrl).href;
@@ -650,8 +668,7 @@ async function processHtmlForOffline(
     }
   });
 
-  // Clean out analytics and tracking scripts, and remove remote script links
-  // (All remote libraries are bundled into scripts.js so the page works 100% offline)
+  // Clean out analytics and tracking scripts
   $('script').each((_, elem) => {
     const src = $(elem).attr('src') || '';
     const content = $(elem).html() || '';
@@ -659,11 +676,6 @@ async function processHtmlForOffline(
       (trackerDomain) => src.includes(trackerDomain) || content.includes(trackerDomain)
     );
     if (isTracker) {
-      $(elem).remove();
-      return;
-    }
-
-    if (src && !src.startsWith('data:') && !src.startsWith('blob:')) {
       $(elem).remove();
     }
   });
@@ -1176,11 +1188,76 @@ img, picture, source {
   return $.html();
 }
 
+/**
+ * Extracts links from an HTML document string with deduplication
+ */
+function extractLinksFromHtml(
+  html: string,
+  currentUrl: string,
+  baseOrigin: string,
+  devicePrefix = 'link'
+): ScrapedLink[] {
+  const $ = cheerio.load(html);
+  const links: ScrapedLink[] = [];
+  const seen = new Set<string>();
+
+  $('a').each((_, elem) => {
+    const href = $(elem).attr('href');
+    if (!href) return;
+    const text =
+      $(elem).text().replace(/\s+/g, ' ').trim() ||
+      $(elem).attr('title')?.trim() ||
+      $(elem).attr('aria-label')?.trim() ||
+      '[No anchor text]';
+    const { resolvedUrl, type } = classifyLink(href, currentUrl, baseOrigin);
+    const key = `${type}:${resolvedUrl}:${text}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      links.push({
+        id: `${devicePrefix}-${links.length + 1}`,
+        url: resolvedUrl,
+        text: text.slice(0, 200),
+        type,
+        sourceUrl: currentUrl,
+      });
+    }
+  });
+  return links;
+}
+
+/**
+ * Extracts H1-H6 headings from an HTML document string
+ */
+function extractHeadingsFromHtml(
+  html: string,
+  currentUrl: string,
+  pageTitle: string,
+  devicePrefix = 'heading'
+): ScrapedHeading[] {
+  const $ = cheerio.load(html);
+  const headings: ScrapedHeading[] = [];
+
+  $('h1, h2, h3, h4, h5, h6').each((_, elem) => {
+    const tagName = (((elem as any).tagName || (elem as any).name || '') as string).toLowerCase() as HeadingLevel;
+    const headingText = $(elem).text().replace(/\s+/g, ' ').trim();
+    if (headingText) {
+      headings.push({
+        id: `${devicePrefix}-${headings.length + 1}`,
+        level: tagName,
+        text: headingText.slice(0, 500),
+        sourceUrl: currentUrl,
+        pageTitle,
+        index: headings.length + 1,
+      });
+    }
+  });
+  return headings;
+}
+
 export async function scrapeWebPage(
   startUrlInput: string,
   mode: CrawlMode = 'single',
-  maxPages = 10,
-  customHtml?: string
+  maxPages = 10
 ): Promise<ScrapeResult> {
   const startTime = Date.now();
   let parsedStartUrl: URL;
@@ -1203,9 +1280,15 @@ export async function scrapeWebPage(
 
   const visitedUrls = new Set<string>();
   const toVisitQueue: string[] = [parsedStartUrl.href];
-  const allScrapedLinks: ScrapedLink[] = [];
-  const allScrapedHeadings: ScrapedHeading[] = [];
-  const seenLinkKeys = new Set<string>();
+
+  // Raw extracted lists per device profile
+  const desktopLinksRaw: ScrapedLink[] = [];
+  const tabletLinksRaw: ScrapedLink[] = [];
+  const mobileLinksRaw: ScrapedLink[] = [];
+
+  const desktopHeadingsRaw: ScrapedHeading[] = [];
+  const tabletHeadingsRaw: ScrapedHeading[] = [];
+  const mobileHeadingsRaw: ScrapedHeading[] = [];
 
   // Map to store raw crawled pages: url -> { filename, title, rawHtml }
   const rawPagesMap = new Map<string, { filename: string; title: string; rawHtml: string }>();
@@ -1241,40 +1324,36 @@ export async function scrapeWebPage(
     visitedUrls.add(normalizedUrl);
 
     try {
-      let html: string;
-      if (customHtml && customHtml.trim() && visitedUrls.size === 1) {
-        html = customHtml;
-      } else {
-        let response: { ok: boolean; status: number; text: string; contentType: string; finalUrl: string };
-        try {
+      let response: { ok: boolean; status: number; text: string; contentType: string; finalUrl: string };
+      try {
+        response = await fetchWithTimeout(
+          currentUrl,
+          12000,
+          tracker,
+          'document',
+          undefined,
+          cookieJar
+        );
+      } catch (firstErr: any) {
+        // If HTTPS fails and was auto-prepended, try HTTP fallback
+        if (currentUrl.startsWith('https://') && !startUrlInput.startsWith('https://')) {
+          const httpUrl = currentUrl.replace(/^https:\/\//i, 'http://');
           response = await fetchWithTimeout(
-            currentUrl,
+            httpUrl,
             12000,
             tracker,
             'document',
             undefined,
             cookieJar
           );
-        } catch (firstErr: any) {
-          // If HTTPS fails and was auto-prepended, try HTTP fallback
-          if (currentUrl.startsWith('https://') && !startUrlInput.startsWith('https://')) {
-            const httpUrl = currentUrl.replace(/^https:\/\//i, 'http://');
-            response = await fetchWithTimeout(
-              httpUrl,
-              12000,
-              tracker,
-              'document',
-              undefined,
-              cookieJar
-            );
-          } else {
-            throw firstErr;
-          }
+        } else {
+          throw firstErr;
         }
-
-        if (!response.ok) continue;
-        html = response.text;
       }
+
+      if (!response.ok) continue;
+
+      const html = response.text;
       const $ = cheerio.load(html);
 
       const pageTitle = $('title').text().trim() || domain;
@@ -1292,53 +1371,25 @@ export async function scrapeWebPage(
       rawPagesMap.set(normalizedUrl, { filename: fileName, title: pageTitle, rawHtml: html });
       pageMapping.set(normalizedUrl, fileName);
 
-      // 1. Discover all links <a>
-      $('a').each((_, elem) => {
-        const href = $(elem).attr('href');
-        if (!href) return;
-        const text =
-          $(elem).text().replace(/\s+/g, ' ').trim() ||
-          $(elem).attr('title')?.trim() ||
-          '[No anchor text]';
-        const { resolvedUrl, type } = classifyLink(href, currentUrl, baseOrigin);
-
-        const key = `${type}:${resolvedUrl}:${text}`;
-        if (!seenLinkKeys.has(key)) {
-          seenLinkKeys.add(key);
-          allScrapedLinks.push({
-            id: `link-${allScrapedLinks.length + 1}`,
-            url: resolvedUrl,
-            text: text.slice(0, 200),
-            type,
-            sourceUrl: currentUrl,
-          });
-        }
-
-        if (mode === 'all' && type === 'internal' && resolvedUrl.startsWith(baseOrigin)) {
-          const cleanUrl = resolvedUrl.split('#')[0];
+      // 1. Discover all links <a> for desktop
+      const pageDesktopLinks = extractLinksFromHtml(html, currentUrl, baseOrigin, 'desktop');
+      for (const link of pageDesktopLinks) {
+        desktopLinksRaw.push(link);
+        if (mode === 'all' && link.type === 'internal' && link.url.startsWith(baseOrigin)) {
+          const cleanUrl = link.url.split('#')[0];
           if (!visitedUrls.has(cleanUrl) && !toVisitQueue.includes(cleanUrl)) {
             if (!/\.(png|jpe?g|gif|svg|pdf|zip|css|js|xml|json|mp4|mp3)$/i.test(cleanUrl)) {
               toVisitQueue.push(cleanUrl);
             }
           }
         }
-      });
+      }
 
-      // 2. Discover all headings (H1 to H6)
-      $('h1, h2, h3, h4, h5, h6').each((_, elem) => {
-        const tagName = (((elem as any).tagName || (elem as any).name || '') as string).toLowerCase() as HeadingLevel;
-        const headingText = $(elem).text().replace(/\s+/g, ' ').trim();
-        if (headingText) {
-          allScrapedHeadings.push({
-            id: `heading-${allScrapedHeadings.length + 1}`,
-            level: tagName,
-            text: headingText.slice(0, 500),
-            sourceUrl: currentUrl,
-            pageTitle,
-            index: allScrapedHeadings.length + 1,
-          });
-        }
-      });
+      // 2. Discover all headings (H1 to H6) for desktop
+      const pageDesktopHeadings = extractHeadingsFromHtml(html, currentUrl, pageTitle, 'desktop');
+      for (const h of pageDesktopHeadings) {
+        desktopHeadingsRaw.push(h);
+      }
 
       // 3. Discover ALL stylesheets in document order (external and inline style tags)
       $('link, style').each((idx, elem) => {
@@ -1442,6 +1493,10 @@ export async function scrapeWebPage(
           rawHtml: tabRes.text,
         });
 
+        // Extract tablet-specific links & headings
+        tabletLinksRaw.push(...extractLinksFromHtml(tabRes.text, pageUrl, baseOrigin, 'tablet'));
+        tabletHeadingsRaw.push(...extractHeadingsFromHtml(tabRes.text, pageUrl, rawData.title, 'tablet'));
+
         // Discover tablet-specific stylesheets
         const $tab = cheerio.load(tabRes.text);
         $tab('link, style').each((idx, elem) => {
@@ -1480,9 +1535,13 @@ export async function scrapeWebPage(
         });
       } else {
         rawPagesMapTablet.set(pageUrl, { ...rawData });
+        tabletLinksRaw.push(...extractLinksFromHtml(rawData.rawHtml, pageUrl, baseOrigin, 'tablet'));
+        tabletHeadingsRaw.push(...extractHeadingsFromHtml(rawData.rawHtml, pageUrl, rawData.title, 'tablet'));
       }
     } catch {
       rawPagesMapTablet.set(pageUrl, { ...rawData });
+      tabletLinksRaw.push(...extractLinksFromHtml(rawData.rawHtml, pageUrl, baseOrigin, 'tablet'));
+      tabletHeadingsRaw.push(...extractHeadingsFromHtml(rawData.rawHtml, pageUrl, rawData.title, 'tablet'));
     }
 
     // 2. Fetch Mobile pass
@@ -1502,6 +1561,10 @@ export async function scrapeWebPage(
           title: rawData.title,
           rawHtml: mobRes.text,
         });
+
+        // Extract mobile-specific links & headings
+        mobileLinksRaw.push(...extractLinksFromHtml(mobRes.text, pageUrl, baseOrigin, 'mobile'));
+        mobileHeadingsRaw.push(...extractHeadingsFromHtml(mobRes.text, pageUrl, rawData.title, 'mobile'));
 
         // Discover mobile-specific stylesheets
         const $mob = cheerio.load(mobRes.text);
@@ -1541,9 +1604,13 @@ export async function scrapeWebPage(
         });
       } else {
         rawPagesMapMobile.set(pageUrl, { ...rawData });
+        mobileLinksRaw.push(...extractLinksFromHtml(rawData.rawHtml, pageUrl, baseOrigin, 'mobile'));
+        mobileHeadingsRaw.push(...extractHeadingsFromHtml(rawData.rawHtml, pageUrl, rawData.title, 'mobile'));
       }
     } catch {
       rawPagesMapMobile.set(pageUrl, { ...rawData });
+      mobileLinksRaw.push(...extractLinksFromHtml(rawData.rawHtml, pageUrl, baseOrigin, 'mobile'));
+      mobileHeadingsRaw.push(...extractHeadingsFromHtml(rawData.rawHtml, pageUrl, rawData.title, 'mobile'));
     }
   }
 
@@ -1632,33 +1699,24 @@ export async function scrapeWebPage(
     `// ========================================================================\n// OFFLINE JAVASCRIPT BUNDLE\n// Extracted from ${startUrlInput}\n// ========================================================================\n`,
   ];
 
-  // Fetch external scripts (libraries, UI frameworks, plugins) concurrently
-  const scriptList = Array.from(discoveredScriptUrls).slice(0, 40);
-  const fetchedScripts = await runWithConcurrency(scriptList, 6, async (jsUrl) => {
-    if (!tracker.canFetch()) return null;
+  // Fetch external scripts (prioritized to key UI libraries)
+  for (const jsUrl of Array.from(discoveredScriptUrls).slice(0, 10)) {
+    if (!tracker.canFetch()) break;
     try {
       const jsRes = await fetchWithTimeout(
         jsUrl,
-        8000,
+        7000,
         tracker,
         'script',
         parsedStartUrl.href,
         cookieJar
       );
-      if (jsRes.ok && jsRes.text && jsRes.text.length < 3 * 1024 * 1024) {
-        return {
-          url: jsUrl,
-          content: `// --- Script from ${jsUrl} ---\n(function(){\ntry {\n${jsRes.text}\n} catch(e){ console.warn("Error in script ${jsUrl}:", e); }\n})();\n`,
-        };
+      if (jsRes.ok && jsRes.text && jsRes.text.length < 800000) {
+        jsSections.push(
+          `// --- Script from ${jsUrl} ---\n(function(){\ntry {\n${jsRes.text}\n} catch(e){ console.warn("Error in script ${jsUrl}:", e); }\n})();\n`
+        );
       }
     } catch {}
-    return null;
-  });
-
-  for (const s of fetchedScripts) {
-    if (s && s.content) {
-      jsSections.push(s.content);
-    }
   }
 
   // Include extracted inline scripts
@@ -1749,6 +1807,130 @@ export async function scrapeWebPage(
   }
 
   // Common styles, scripts, and reports
+  // ==========================================================
+  // CORRELATE AND CATEGORIZE LINKS & HEADINGS ACROSS DEVICES
+  // ==========================================================
+  const linkCorrelationMap = new Map<string, { link: ScrapedLink; devices: Set<DeviceType> }>();
+  const addLinkToCorrelation = (link: ScrapedLink, dev: DeviceType) => {
+    const key = `${link.type}:::${link.url}:::${link.text}`;
+    const entry = linkCorrelationMap.get(key);
+    if (entry) {
+      entry.devices.add(dev);
+    } else {
+      linkCorrelationMap.set(key, {
+        link: { ...link },
+        devices: new Set([dev]),
+      });
+    }
+  };
+
+  for (const l of desktopLinksRaw) addLinkToCorrelation(l, 'desktop');
+  for (const l of tabletLinksRaw) addLinkToCorrelation(l, 'tablet');
+  for (const l of mobileLinksRaw) addLinkToCorrelation(l, 'mobile');
+
+  // Master unique list of all scraped links across all devices
+  const allScrapedLinks: ScrapedLink[] = [];
+  for (const [_, entry] of linkCorrelationMap.entries()) {
+    allScrapedLinks.push({
+      ...entry.link,
+      id: `link-${allScrapedLinks.length + 1}`,
+      devices: Array.from(entry.devices),
+    });
+  }
+
+  // Device-specific deduplicated link lists with device tags
+  const prepareDeviceLinks = (rawList: ScrapedLink[]) => {
+    const seen = new Set<string>();
+    const list: ScrapedLink[] = [];
+    for (const item of rawList) {
+      const key = `${item.type}:::${item.url}:::${item.text}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        const devices = linkCorrelationMap.get(key)
+          ? Array.from(linkCorrelationMap.get(key)!.devices)
+          : [];
+        list.push({
+          ...item,
+          id: `link-${list.length + 1}`,
+          devices,
+        });
+      }
+    }
+    return list;
+  };
+
+  const linksDesktop = prepareDeviceLinks(desktopLinksRaw);
+  const linksTablet = prepareDeviceLinks(tabletLinksRaw);
+  const linksMobile = prepareDeviceLinks(mobileLinksRaw);
+
+  // Correlate headings across devices
+  const headingCorrelationMap = new Map<string, { heading: ScrapedHeading; devices: Set<DeviceType> }>();
+  const addHeadingToCorrelation = (h: ScrapedHeading, dev: DeviceType) => {
+    const key = `${h.level}:::${h.text}:::${h.sourceUrl}`;
+    const entry = headingCorrelationMap.get(key);
+    if (entry) {
+      entry.devices.add(dev);
+    } else {
+      headingCorrelationMap.set(key, {
+        heading: { ...h },
+        devices: new Set([dev]),
+      });
+    }
+  };
+
+  for (const h of desktopHeadingsRaw) addHeadingToCorrelation(h, 'desktop');
+  for (const h of tabletHeadingsRaw) addHeadingToCorrelation(h, 'tablet');
+  for (const h of mobileHeadingsRaw) addHeadingToCorrelation(h, 'mobile');
+
+  // Master unique list of all headings
+  const allScrapedHeadings: ScrapedHeading[] = [];
+  for (const [_, entry] of headingCorrelationMap.entries()) {
+    allScrapedHeadings.push({
+      ...entry.heading,
+      id: `heading-${allScrapedHeadings.length + 1}`,
+      devices: Array.from(entry.devices),
+    });
+  }
+
+  const prepareDeviceHeadings = (rawList: ScrapedHeading[]) => {
+    const seen = new Set<string>();
+    const list: ScrapedHeading[] = [];
+    for (const item of rawList) {
+      const key = `${item.level}:::${item.text}:::${item.sourceUrl}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        const devices = headingCorrelationMap.get(key)
+          ? Array.from(headingCorrelationMap.get(key)!.devices)
+          : [];
+        list.push({
+          ...item,
+          id: `heading-${list.length + 1}`,
+          devices,
+        });
+      }
+    }
+    return list;
+  };
+
+  const headingsDesktop = prepareDeviceHeadings(desktopHeadingsRaw);
+  const headingsTablet = prepareDeviceHeadings(tabletHeadingsRaw);
+  const headingsMobile = prepareDeviceHeadings(mobileHeadingsRaw);
+
+  const getHeadingsCount = (list: ScrapedHeading[]): Record<HeadingLevel, number> => ({
+    h1: list.filter((h) => h.level === 'h1').length,
+    h2: list.filter((h) => h.level === 'h2').length,
+    h3: list.filter((h) => h.level === 'h3').length,
+    h4: list.filter((h) => h.level === 'h4').length,
+    h5: list.filter((h) => h.level === 'h5').length,
+    h6: list.filter((h) => h.level === 'h6').length,
+  });
+
+  const headingsCountDesktop = getHeadingsCount(headingsDesktop);
+  const headingsCountTablet = getHeadingsCount(headingsTablet);
+  const headingsCountMobile = getHeadingsCount(headingsMobile);
+  const headingsCount = getHeadingsCount(allScrapedHeadings);
+
+  // Common styles & scripts
   const fileCssMain: ExtractedFile = {
     id: 'file-css-main',
     name: 'styles.css',
@@ -1767,7 +1949,7 @@ export async function scrapeWebPage(
     description: `Extracted JavaScript bundle (${discoveredScriptUrls.size} external scripts + ${discoveredInlineScripts.length} inline scripts)`,
   };
 
-  // Add links_report.html
+  // Enhanced links_report.html with device breakdown & badges
   const linksReportHtml = `<!DOCTYPE html>
 <html lang="en" dir="auto">
 <head>
@@ -1776,15 +1958,20 @@ export async function scrapeWebPage(
   <title>Extracted Links Report - ${escapeHtml(siteTitle || domain)}</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; margin: 0; padding: 2rem; background: #0f172a; color: #e2e8f0; }
-    .container { max-width: 1100px; margin: 0 auto; background: #1e293b; padding: 2rem; border-radius: 16px; border: 1px solid #334155; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }
+    .container { max-width: 1200px; margin: 0 auto; background: #1e293b; padding: 2rem; border-radius: 16px; border: 1px solid #334155; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); }
     h1 { margin-top: 0; color: #f8fafc; font-size: 1.75rem; }
     .meta { display: flex; gap: 1.5rem; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 1px solid #334155; font-size: 0.9rem; color: #94a3b8; flex-wrap: wrap; }
-    .badge { display: inline-block; padding: 0.25rem 0.65rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .meta-box { background: #0f172a; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #334155; }
+    .badge { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; margin-right: 4px; }
     .badge-internal { background: #064e3b; color: #34d399; border: 1px solid #059669; }
     .badge-external { background: #78350f; color: #fbbf24; border: 1px solid #d97706; }
     .badge-asset { background: #312e81; color: #a5b4fc; border: 1px solid #6366f1; }
     .badge-anchor { background: #334155; color: #cbd5e1; border: 1px solid #475569; }
     .badge-other { background: #1e293b; color: #94a3b8; border: 1px solid #334155; }
+    .dev-badge { display: inline-flex; align-items: center; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.7rem; font-weight: 500; margin: 1px; }
+    .dev-desktop { background: #1e3a8a; color: #93c5fd; border: 1px solid #2563eb; }
+    .dev-tablet { background: #581c87; color: #d8b4fe; border: 1px solid #7e22ce; }
+    .dev-mobile { background: #064e3b; color: #6ee7b7; border: 1px solid #059669; }
     table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.875rem; }
     th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid #334155; vertical-align: top; }
     th { background: #0f172a; color: #94a3b8; font-weight: 600; }
@@ -1794,20 +1981,22 @@ export async function scrapeWebPage(
 </head>
 <body>
   <div class="container">
-    <h1>Extracted Links Report</h1>
+    <h1>Extracted Links Report & Multi-Device Breakdown</h1>
     <div class="meta">
-      <div><strong>Target:</strong> ${escapeHtml(startUrlInput)}</div>
-      <div><strong>Pages Scanned:</strong> ${visitedUrls.size}</div>
-      <div><strong>Total Links:</strong> ${allScrapedLinks.length}</div>
-      <div><strong>Offline Status:</strong> 100% Self-Contained (Zero Internet Dependency)</div>
+      <div class="meta-box"><strong>Target:</strong> ${escapeHtml(startUrlInput)}</div>
+      <div class="meta-box"><strong>Desktop Links:</strong> ${linksDesktop.length}</div>
+      <div class="meta-box"><strong>Tablet Links:</strong> ${linksTablet.length}</div>
+      <div class="meta-box"><strong>Mobile Links:</strong> ${linksMobile.length}</div>
+      <div class="meta-box"><strong>Total Unique Links:</strong> ${allScrapedLinks.length}</div>
     </div>
     <table>
       <thead>
         <tr>
-          <th style="width: 50px;">#</th>
+          <th style="width: 45px;">#</th>
           <th>Link Text</th>
           <th>Target URL</th>
-          <th style="width: 100px;">Type</th>
+          <th style="width: 90px;">Type</th>
+          <th>Found on Devices</th>
           <th>Found on Page</th>
         </tr>
       </thead>
@@ -1820,6 +2009,16 @@ export async function scrapeWebPage(
           <td><strong>${escapeHtml(link.text)}</strong></td>
           <td><a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(link.url)}</a></td>
           <td><span class="badge badge-${link.type}">${link.type}</span></td>
+          <td>
+            ${(link.devices || ['desktop'])
+              .map(
+                (d) =>
+                  `<span class="dev-badge dev-${d}">${
+                    d === 'desktop' ? '💻 Desktop' : d === 'tablet' ? '📱 Tablet' : '📱 Mobile'
+                  }</span>`
+              )
+              .join(' ')}
+          </td>
           <td><small>${escapeHtml(link.sourceUrl)}</small></td>
         </tr>
         `
@@ -1837,155 +2036,205 @@ export async function scrapeWebPage(
     type: 'html',
     content: linksReportHtml,
     size: Buffer.byteLength(linksReportHtml, 'utf-8'),
-    description: 'Self-contained interactive HTML report of all extracted links',
+    description: 'Self-contained interactive HTML report of all extracted links with device tags',
   };
 
-  // Structured links.json
-  const linksJsonContent = JSON.stringify(
-    {
-      scrapedAt: new Date().toISOString(),
-      targetUrl: startUrlInput,
-      domain,
-      offlineReady: true,
-      pagesScanned: Array.from(visitedUrls),
-      totalLinks: allScrapedLinks.length,
-      totalHeadings: allScrapedHeadings.length,
-      stylesDiscovered: discoveredStyles.length,
-      embeddedAssetsCount: assetCache.size,
-      links: allScrapedLinks,
-      headings: allScrapedHeadings,
-    },
-    null,
-    2
-  );
-
-  const fileJsonLinks: ExtractedFile = {
-    id: 'file-json-links',
-    name: 'links.json',
-    type: 'json',
-    content: linksJsonContent,
-    size: Buffer.byteLength(linksJsonContent, 'utf-8'),
-    description: 'Structured JSON file containing all scraped links metadata',
-  };
-
-  const headingsCount: Record<HeadingLevel, number> = {
-    h1: allScrapedHeadings.filter((h) => h.level === 'h1').length,
-    h2: allScrapedHeadings.filter((h) => h.level === 'h2').length,
-    h3: allScrapedHeadings.filter((h) => h.level === 'h3').length,
-    h4: allScrapedHeadings.filter((h) => h.level === 'h4').length,
-    h5: allScrapedHeadings.filter((h) => h.level === 'h5').length,
-    h6: allScrapedHeadings.filter((h) => h.level === 'h6').length,
-  };
-
-  // Structured headings.json
-  const headingsJsonContent = JSON.stringify(
-    {
-      scrapedAt: new Date().toISOString(),
-      targetUrl: startUrlInput,
-      domain,
-      totalHeadings: allScrapedHeadings.length,
-      counts: headingsCount,
-      headings: allScrapedHeadings,
-    },
-    null,
-    2
-  );
-
-  const fileJsonHeadings: ExtractedFile = {
-    id: 'file-json-headings',
-    name: 'headings.json',
-    type: 'json',
-    content: headingsJsonContent,
-    size: Buffer.byteLength(headingsJsonContent, 'utf-8'),
-    description: `Structured JSON file with all ${allScrapedHeadings.length} extracted H1-H6 headings`,
-  };
-
-  // Structured assets.json cataloging all extracted media, images, SVGs, and webfonts
-  const assetsList = Array.from(assetCache.entries()).map(([origUrl, dataUri], idx) => {
-    let assetType = 'image';
-    if (dataUri.startsWith('data:font/') || dataUri.startsWith('data:application/font') || /\.(woff2?|ttf|otf|eot)/i.test(origUrl)) {
-      assetType = 'font';
-    } else if (dataUri.startsWith('data:image/svg') || origUrl.endsWith('.svg')) {
-      assetType = 'svg';
-    } else if (dataUri.startsWith('data:video') || /\.(mp4|webm|ogg)/i.test(origUrl)) {
-      assetType = 'video';
-    } else if (dataUri.startsWith('data:audio') || /\.(mp3|wav|ogg)/i.test(origUrl)) {
-      assetType = 'audio';
-    }
-    return {
-      id: `asset-${idx + 1}`,
-      url: origUrl,
-      type: assetType,
-      sizeBytes: dataUri.length,
-      embedded: true,
-      dataUriPreview: dataUri.slice(0, 80) + '...'
-    };
-  });
-
-  const assetsJsonContent = JSON.stringify(
-    {
-      scrapedAt: new Date().toISOString(),
-      targetUrl: startUrlInput,
-      domain,
-      totalAssetsExtracted: assetsList.length,
-      types: {
-        images: assetsList.filter(a => a.type === 'image').length,
-        svgs: assetsList.filter(a => a.type === 'svg').length,
-        fonts: assetsList.filter(a => a.type === 'font').length,
-        media: assetsList.filter(a => a.type === 'video' || a.type === 'audio').length,
+  // Helper to generate device-tailored links.json
+  const createDeviceJsonLinks = (dev: DeviceType, linksList: ScrapedLink[]) => {
+    const json = JSON.stringify(
+      {
+        scrapedAt: new Date().toISOString(),
+        device: dev,
+        profile: DEVICE_PROFILES[dev],
+        targetUrl: startUrlInput,
+        domain,
+        offlineReady: true,
+        pagesScanned: Array.from(visitedUrls),
+        totalLinks: linksList.length,
+        internalLinks: linksList.filter((l) => l.type === 'internal').length,
+        externalLinks: linksList.filter((l) => l.type === 'external').length,
+        exclusiveToDevice: linksList.filter((l) => l.devices?.length === 1).length,
+        links: linksList,
       },
-      assets: assetsList,
+      null,
+      2
+    );
+    return {
+      id: `file-json-links-${dev}`,
+      name: 'links.json',
+      type: 'json' as const,
+      content: json,
+      size: Buffer.byteLength(json, 'utf-8'),
+      description: `Structured JSON file containing ${linksList.length} links for ${DEVICE_PROFILES[dev].name}`,
+    };
+  };
+
+  // Helper to generate device-tailored headings.json
+  const createDeviceJsonHeadings = (
+    dev: DeviceType,
+    headingsList: ScrapedHeading[],
+    counts: Record<HeadingLevel, number>
+  ) => {
+    const json = JSON.stringify(
+      {
+        scrapedAt: new Date().toISOString(),
+        device: dev,
+        profile: DEVICE_PROFILES[dev],
+        targetUrl: startUrlInput,
+        domain,
+        totalHeadings: headingsList.length,
+        counts,
+        headings: headingsList,
+      },
+      null,
+      2
+    );
+    return {
+      id: `file-json-headings-${dev}`,
+      name: 'headings.json',
+      type: 'json' as const,
+      content: json,
+      size: Buffer.byteLength(json, 'utf-8'),
+      description: `Structured JSON file with ${headingsList.length} extracted H1-H6 headings for ${DEVICE_PROFILES[dev].name}`,
+    };
+  };
+
+  // Device comparison metrics
+  const deviceComparison: DeviceComparison = {
+    totalLinks: {
+      desktop: linksDesktop.length,
+      tablet: linksTablet.length,
+      mobile: linksMobile.length,
+    },
+    totalHeadings: {
+      desktop: headingsDesktop.length,
+      tablet: headingsTablet.length,
+      mobile: headingsMobile.length,
+    },
+    totalPayloadBytes: {
+      desktop: 0,
+      tablet: 0,
+      mobile: 0,
+    },
+    uniqueLinksCount: {
+      desktop: linksDesktop.filter((l) => l.devices?.length === 1).length,
+      tablet: linksTablet.filter((l) => l.devices?.length === 1).length,
+      mobile: linksMobile.filter((l) => l.devices?.length === 1).length,
+    },
+    commonLinksCount: allScrapedLinks.filter((l) => l.devices?.length === 3).length,
+    differencesDetected:
+      linksDesktop.length !== linksMobile.length ||
+      headingsDesktop.length !== headingsMobile.length ||
+      linksDesktop.some((l) => l.devices?.length !== 3) ||
+      linksMobile.some((l) => l.devices?.length !== 3),
+  };
+
+  const deviceComparisonJson = JSON.stringify(
+    {
+      scrapedAt: new Date().toISOString(),
+      targetUrl: startUrlInput,
+      domain,
+      profiles: DEVICE_PROFILES,
+      comparison: deviceComparison,
     },
     null,
     2
   );
 
-  const fileJsonAssets: ExtractedFile = {
-    id: 'file-json-assets',
-    name: 'assets.json',
+  const fileJsonDeviceComparison: ExtractedFile = {
+    id: 'file-json-device-comparison',
+    name: 'device_comparison.json',
     type: 'json',
-    content: assetsJsonContent,
-    size: Buffer.byteLength(assetsJsonContent, 'utf-8'),
-    description: `Structured catalog of all ${assetsList.length} extracted media, images, SVGs, and fonts`,
+    content: deviceComparisonJson,
+    size: Buffer.byteLength(deviceComparisonJson, 'utf-8'),
+    description: 'Detailed cross-device comparison metrics and breakdown (Desktop vs Tablet vs Mobile)',
   };
 
-  const commonFiles: ExtractedFile[] = [
+  // Assemble device file bundles
+  const allDesktopFiles: ExtractedFile[] = [
+    ...filesDesktop,
     fileCssMain,
     fileJsMain,
     fileReportHtml,
-    fileJsonLinks,
-    fileJsonHeadings,
-    fileJsonAssets,
+    createDeviceJsonLinks('desktop', linksDesktop),
+    createDeviceJsonHeadings('desktop', headingsDesktop, headingsCountDesktop),
+    fileJsonDeviceComparison,
   ];
 
-  const allDesktopFiles: ExtractedFile[] = [...filesDesktop, ...commonFiles];
-  const allTabletFiles: ExtractedFile[] = [...filesTablet, ...commonFiles];
-  const allMobileFiles: ExtractedFile[] = [...filesMobile, ...commonFiles];
+  const allTabletFiles: ExtractedFile[] = [
+    ...filesTablet,
+    fileCssMain,
+    fileJsMain,
+    fileReportHtml,
+    createDeviceJsonLinks('tablet', linksTablet),
+    createDeviceJsonHeadings('tablet', headingsTablet, headingsCountTablet),
+    fileJsonDeviceComparison,
+  ];
+
+  const allMobileFiles: ExtractedFile[] = [
+    ...filesMobile,
+    fileCssMain,
+    fileJsMain,
+    fileReportHtml,
+    createDeviceJsonLinks('mobile', linksMobile),
+    createDeviceJsonHeadings('mobile', headingsMobile, headingsCountMobile),
+    fileJsonDeviceComparison,
+  ];
+
+  deviceComparison.totalPayloadBytes = {
+    desktop: allDesktopFiles.reduce((acc, f) => acc + f.size, 0),
+    tablet: allTabletFiles.reduce((acc, f) => acc + f.size, 0),
+    mobile: allMobileFiles.reduce((acc, f) => acc + f.size, 0),
+  };
 
   const deviceVersions: Record<DeviceType, DeviceVersion> = {
     desktop: {
       device: 'desktop',
       title: `${siteTitle || domain} (Desktop)`,
       files: allDesktopFiles,
-      totalBytes: allDesktopFiles.reduce((acc, f) => acc + f.size, 0),
+      totalBytes: deviceComparison.totalPayloadBytes.desktop,
       viewport: DEVICE_PROFILES.desktop.viewport,
       userAgent: DEVICE_PROFILES.desktop.userAgent,
+      profileInfo: DEVICE_PROFILES.desktop,
+      links: linksDesktop,
+      headings: headingsDesktop,
+      headingsCount: headingsCountDesktop,
+      totalLinksFound: linksDesktop.length,
+      internalLinksCount: linksDesktop.filter((l) => l.type === 'internal').length,
+      externalLinksCount: linksDesktop.filter((l) => l.type === 'external').length,
+      uniqueLinksCount: linksDesktop.filter((l) => l.devices?.length === 1).length,
     },
     tablet: {
       device: 'tablet',
       title: `${siteTitle || domain} (Tablet)`,
       files: allTabletFiles,
-      totalBytes: allTabletFiles.reduce((acc, f) => acc + f.size, 0),
+      totalBytes: deviceComparison.totalPayloadBytes.tablet,
       viewport: DEVICE_PROFILES.tablet.viewport,
       userAgent: DEVICE_PROFILES.tablet.userAgent,
+      profileInfo: DEVICE_PROFILES.tablet,
+      links: linksTablet,
+      headings: headingsTablet,
+      headingsCount: headingsCountTablet,
+      totalLinksFound: linksTablet.length,
+      internalLinksCount: linksTablet.filter((l) => l.type === 'internal').length,
+      externalLinksCount: linksTablet.filter((l) => l.type === 'external').length,
+      uniqueLinksCount: linksTablet.filter((l) => l.devices?.length === 1).length,
     },
     mobile: {
       device: 'mobile',
       title: `${siteTitle || domain} (Mobile)`,
       files: allMobileFiles,
-      totalBytes: allMobileFiles.reduce((acc, f) => acc + f.size, 0),
+      totalBytes: deviceComparison.totalPayloadBytes.mobile,
       viewport: DEVICE_PROFILES.mobile.viewport,
       userAgent: DEVICE_PROFILES.mobile.userAgent,
+      profileInfo: DEVICE_PROFILES.mobile,
+      links: linksMobile,
+      headings: headingsMobile,
+      headingsCount: headingsCountMobile,
+      totalLinksFound: linksMobile.length,
+      internalLinksCount: linksMobile.filter((l) => l.type === 'internal').length,
+      externalLinksCount: linksMobile.filter((l) => l.type === 'external').length,
+      uniqueLinksCount: linksMobile.filter((l) => l.devices?.length === 1).length,
     },
   };
 
@@ -2007,6 +2256,7 @@ export async function scrapeWebPage(
     headingsCount,
     files: allDesktopFiles,
     deviceVersions,
+    deviceComparison,
     scannedUrls: Array.from(visitedUrls),
     executionTimeMs: Date.now() - startTime,
   };
