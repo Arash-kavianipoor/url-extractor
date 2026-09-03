@@ -120,6 +120,15 @@ export default function App() {
     }
   };
 
+  const handleExtensionResult = (extResult: ScrapeResult) => {
+    setResult(extResult);
+    setOriginalFiles(extResult.files);
+    setEditedFiles(extResult.files);
+    setActiveTab('preview');
+    setSelectedDevice('desktop');
+    setErrorMessage(null);
+  };
+
   const handleScrape = async (
     url: string,
     mode: CrawlMode,
@@ -217,8 +226,8 @@ export default function App() {
           if (response.status === 503) {
             errMessage =
               language === 'fa'
-                ? 'خطای ۵۰۳: دسترسی سرور به سایت هدف محدود شد. لطفاً از تب «سورس مستقیم / ChromeDriver» در بالای فرم استفاده کنید و کدهای صفحه را Paste نمایید تا سرور تمام استایل‌ها و کتابخانه‌ها را کامل استخراج کند.'
-                : '503 Blocked: Target website blocked automated scrapers. Please use the "ChromeDriver / Page Source" tab above to paste the HTML directly.';
+                ? 'سایت مقصد دسترسی مستقیم سرور را محدود کرده است. لطفاً اکستنشن مرورگر را با ۱ کلیک از دکمه بالای فرم فعال کنید تا استخراج تمام فایل‌ها (Assetها، CSS و JS) مستقیماً و خودکار بدون کپی-پیست انجام شود.'
+                : 'Target site restricted server requests. Please activate the browser extension from the button above for zero-copy full extraction of assets, CSS, and JS.';
           } else {
             errMessage = `HTTP ${response.status} (${response.statusText || 'Server Error'})`;
           }
@@ -343,6 +352,7 @@ export default function App() {
         <ScraperForm
           language={language}
           onScrape={handleScrape}
+          onExtensionResult={handleExtensionResult}
           isLoading={isLoading}
         />
 
@@ -449,6 +459,19 @@ export default function App() {
               {/* Tab Selection */}
               <div className="flex items-center gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-xl shadow-inner">
                 <button
+                  id="tab-preview-btn"
+                  onClick={() => setActiveTab('preview')}
+                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    activeTab === 'preview'
+                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Eye className="w-4 h-4 text-emerald-300" />
+                  <span>{t.tabPreview}</span>
+                </button>
+
+                <button
                   id="tab-links-btn"
                   onClick={() => setActiveTab('links')}
                   className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
@@ -494,19 +517,6 @@ export default function App() {
                   <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-purple-950/70 text-purple-300 border border-purple-500/30 font-bold">
                     {editedFiles.length}
                   </span>
-                </button>
-
-                <button
-                  id="tab-preview-btn"
-                  onClick={() => setActiveTab('preview')}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    activeTab === 'preview'
-                      ? 'bg-slate-800 text-white shadow-sm border border-slate-700/60'
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  <Eye className="w-4 h-4 text-emerald-400" />
-                  <span>{t.tabPreview}</span>
                 </button>
               </div>
 

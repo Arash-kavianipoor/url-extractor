@@ -1900,12 +1900,62 @@ export async function scrapeWebPage(
     description: `Structured JSON file with all ${allScrapedHeadings.length} extracted H1-H6 headings`,
   };
 
+  // Structured assets.json cataloging all extracted media, images, SVGs, and webfonts
+  const assetsList = Array.from(assetCache.entries()).map(([origUrl, dataUri], idx) => {
+    let assetType = 'image';
+    if (dataUri.startsWith('data:font/') || dataUri.startsWith('data:application/font') || /\.(woff2?|ttf|otf|eot)/i.test(origUrl)) {
+      assetType = 'font';
+    } else if (dataUri.startsWith('data:image/svg') || origUrl.endsWith('.svg')) {
+      assetType = 'svg';
+    } else if (dataUri.startsWith('data:video') || /\.(mp4|webm|ogg)/i.test(origUrl)) {
+      assetType = 'video';
+    } else if (dataUri.startsWith('data:audio') || /\.(mp3|wav|ogg)/i.test(origUrl)) {
+      assetType = 'audio';
+    }
+    return {
+      id: `asset-${idx + 1}`,
+      url: origUrl,
+      type: assetType,
+      sizeBytes: dataUri.length,
+      embedded: true,
+      dataUriPreview: dataUri.slice(0, 80) + '...'
+    };
+  });
+
+  const assetsJsonContent = JSON.stringify(
+    {
+      scrapedAt: new Date().toISOString(),
+      targetUrl: startUrlInput,
+      domain,
+      totalAssetsExtracted: assetsList.length,
+      types: {
+        images: assetsList.filter(a => a.type === 'image').length,
+        svgs: assetsList.filter(a => a.type === 'svg').length,
+        fonts: assetsList.filter(a => a.type === 'font').length,
+        media: assetsList.filter(a => a.type === 'video' || a.type === 'audio').length,
+      },
+      assets: assetsList,
+    },
+    null,
+    2
+  );
+
+  const fileJsonAssets: ExtractedFile = {
+    id: 'file-json-assets',
+    name: 'assets.json',
+    type: 'json',
+    content: assetsJsonContent,
+    size: Buffer.byteLength(assetsJsonContent, 'utf-8'),
+    description: `Structured catalog of all ${assetsList.length} extracted media, images, SVGs, and fonts`,
+  };
+
   const commonFiles: ExtractedFile[] = [
     fileCssMain,
     fileJsMain,
     fileReportHtml,
     fileJsonLinks,
     fileJsonHeadings,
+    fileJsonAssets,
   ];
 
   const allDesktopFiles: ExtractedFile[] = [...filesDesktop, ...commonFiles];

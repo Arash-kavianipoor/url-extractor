@@ -1,72 +1,168 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Search,
   Loader2,
   ArrowRight,
   ArrowLeft,
   Globe,
-  Layers,
   FileCode2,
-  Terminal,
-  Cpu,
-  ShieldCheck,
-  Code2,
-  Copy,
-  Sparkles,
-  Zap
+  Zap,
+  Puzzle,
+  CheckCircle2,
+  Image,
+  Film,
+  AlertCircle
 } from 'lucide-react';
-import { Language, CrawlMode } from '../types.js';
+import { Language, CrawlMode, ScrapeResult } from '../types.js';
 import { translations, isRtlLanguage } from '../i18n.js';
+import { downloadExtensionZip } from '../utils/extensionGenerator.js';
 
 interface ScraperFormProps {
   language: Language;
   onScrape: (url: string, mode: CrawlMode, maxPages: number, customHtml?: string) => void;
+  onExtensionResult?: (result: ScrapeResult) => void;
   isLoading: boolean;
 }
 
-export const ScraperForm: React.FC<ScraperFormProps> = ({ language, onScrape, isLoading }) => {
-  const [activeInputMethod, setActiveInputMethod] = useState<'url' | 'chromedriver'>('url');
+export const ScraperForm: React.FC<ScraperFormProps> = ({
+  language,
+  onScrape,
+  onExtensionResult,
+  isLoading,
+}) => {
   const [url, setUrl] = useState('');
-  const [mode, setMode] = useState<CrawlMode>('single');
-  const [maxPages, setMaxPages] = useState<number>(8);
-  const [customHtml, setCustomHtml] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isDownloadingExt, setIsDownloadingExt] = useState<string | null>(null);
+  const [extensionReady, setExtensionReady] = useState<boolean>(false);
+  const [extensionBrowser, setExtensionBrowser] = useState<string>('');
+  const [showInstallGuide, setShowInstallGuide] = useState<boolean>(false);
+  const [isExtractingWithExt, setIsExtractingWithExt] = useState<boolean>(false);
 
   const t = translations[language];
   const isRtl = isRtlLanguage(language);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  // Bi-directional listener for extension communication
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (!event.data) return;
 
-    const trimmedUrl = url.trim();
-    if (!trimmedUrl) {
-      setError(t.formErrorEmptyUrl);
-      return;
+      if (event.data.type === 'EXTENSION_STATUS' && event.data.message === 'I am ready') {
+        setExtensionReady(true);
+        if (event.data.browser) {
+          setExtensionBrowser(event.data.browser);
+        }
+      }
+
+      // Extension completed full extraction of all files (HTML, CSS, JS, Media, Assets)
+      if (event.data.type === 'EXTENSION_EXTRACTION_COMPLETE' && event.data.data) {
+        setIsExtractingWithExt(false);
+        const data = event.data.data;
+        if (onExtensionResult) {
+          const formattedResult: ScrapeResult = {
+            targetUrl: data.targetUrl,
+            mode: 'single',
+            domain: new URL(data.targetUrl).hostname,
+            title: data.title,
+            pagesScanned: 1,
+            totalLinksFound: data.links?.length || 0,
+            internalLinksCount: data.links?.filter((l: any) => l.isInternal).length || 0,
+            externalLinksCount: data.links?.filter((l: any) => !l.isInternal).length || 0,
+            links: data.links || [],
+            headings: data.headings || [],
+            totalHeadingsFound: data.headings?.length || 0,
+            headingsCount: {
+              h1: data.headings?.filter((h: any) => h.level === 1).length || 0,
+              h2: data.headings?.filter((h: any) => h.level === 2).length || 0,
+              h3: data.headings?.filter((h: any) => h.level === 3).length || 0,
+              h4: data.headings?.filter((h: any) => h.level === 4).length || 0,
+              h5: data.headings?.filter((h: any) => h.level === 5).length || 0,
+              h6: data.headings?.filter((h: any) => h.level === 6).length || 0,
+            },
+            files: data.files || [],
+            scannedUrls: [data.targetUrl],
+            executionTimeMs: 1200,
+          };
+          onExtensionResult(formattedResult);
+        } else {
+          onScrape(data.targetUrl, 'single', 1, data.files?.[0]?.content);
+        }
+      }
+
+      if (event.data.type === 'EXTENSION_EXTRACTION_ERROR') {
+        setIsExtractingWithExt(false);
+        setError(event.data.error || 'Extension extraction encountered an issue.');
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // Initial ping to extension
+    window.postMessage({ type: 'PING_EXTENSION' }, '*');
+    const pingTimer = setInterval(() => {
+      window.postMessage({ type: 'PING_EXTENSION' }, '*');
+    }, 2000);
+
+    if ((window as any).__WEB_SCRAPER_EXTENSION_READY__) {
+      setExtensionReady(true);
     }
 
-    let testUrl = trimmedUrl;
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      clearInterval(pingTimer);
+    };
+  }, [onExtensionResult, onScrape]);
+
+  const handleDownloadExtension = async (browserType: 'chrome' | 'firefox' | 'all') => {
+    setIsDownloadingExt(browserType);
     try {
-      testUrl = /^https?:\/\//i.test(trimmedUrl) ? trimmedUrl : `https://${trimmedUrl}`;
-      new URL(testUrl);
+      await downloadExtensionZip(browserType);
+    } catch (e) {
+      console.error('Failed to generate extension zip:', e);
+    } finally {
+      setIsDownloadingExt(null);
+    }
+  };
+
+  const validateUrl = (raw: string): string | null => {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      setError(t.formErrorEmptyUrl);
+      return null;
+    }
+    let fullUrl = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    try {
+      new URL(fullUrl);
+      return fullUrl;
     } catch {
       setError(t.formErrorInvalidUrl);
-      return;
+      return null;
     }
+  };
 
-    if (activeInputMethod === 'chromedriver') {
-      if (!customHtml.trim()) {
-        setError(
-          language === 'fa'
-            ? 'لطفاً کدهای سورس HTML یا خروجی ChromeDriver را در کادر متنی وارد کنید.'
-            : 'Please paste the HTML source code or ChromeDriver output into the textarea.'
-        );
-        return;
-      }
-      onScrape(testUrl, mode, maxPages, customHtml);
+  // Triggered when user clicks the standalone "استخراج کامل" button outside the form
+  const handleFullExtractionClick = () => {
+    setError(null);
+    const validUrl = validateUrl(url);
+    if (!validUrl) return;
+
+    // 100% Extraction is handled by the browser extension
+    if (extensionReady) {
+      setIsExtractingWithExt(true);
+      window.postMessage(
+        {
+          type: 'REQUEST_FULL_URL_EXTRACTION',
+          targetUrl: validUrl,
+        },
+        '*'
+      );
     } else {
-      onScrape(testUrl, mode, maxPages);
+      // If extension not active yet, run fallback direct extraction
+      onScrape(validUrl, 'single', 1);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleFullExtractionClick();
   };
 
   const sampleUrls = [
@@ -75,335 +171,207 @@ export const ScraperForm: React.FC<ScraperFormProps> = ({ language, onScrape, is
     'https://quotes.toscrape.com',
   ];
 
-  const handleInsertSampleHtml = () => {
-    setUrl('https://example-shop.com');
-    setCustomHtml(`<!DOCTYPE html>
-<html lang="fa" dir="rtl">
-<head>
-  <meta charset="UTF-8">
-  <title>فروشگاه نمونه واکنش‌گرا</title>
-  <style>
-    body { font-family: system-ui, sans-serif; background: #f8fafc; color: #0f172a; margin: 0; padding: 20px; }
-    header { background: #4f46e5; color: #fff; padding: 24px; border-radius: 16px; text-align: center; }
-    h1 { margin: 0 0 8px 0; font-size: 28px; }
-    .hero { margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-    .card { background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
-    a.btn { display: inline-block; margin-top: 12px; padding: 8px 16px; background: #4f46e5; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600; }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>فروشگاه تست چند‌دستگاهی</h1>
-    <p>استخراج مستقیم و نمایش در دسکتاپ، تبلت و موبایل بدون وابستگی به سرور</p>
-  </header>
-  <main class="hero">
-    <div class="card">
-      <h2>محصول ۱: لپ‌تاپ پرو</h2>
-      <p>نمایش کامل در مانیتور دسکتاپ با وضوح بالا.</p>
-      <a class="btn" href="https://example-shop.com/products/laptop">مشاهده محصول</a>
-    </div>
-    <div class="card">
-      <h2>محصول ۲: تبلت اولترا</h2>
-      <p>بهینه‌سازی لمسی با استایل اختصاصی تبلت.</p>
-      <a class="btn" href="https://example-shop.com/products/tablet">مشاهده محصول</a>
-    </div>
-    <div class="card">
-      <h2>محصول ۳: گوشی همراه</h2>
-      <p>ابعاد واکنش‌گرا برای فریم گوشی هوشمند.</p>
-      <a class="btn" href="https://example-shop.com/products/mobile">مشاهده محصول</a>
-    </div>
-  </main>
-</body>
-</html>`);
-  };
-
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-xl shadow-black/25">
-      {/* Top Method Tabs */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-5 mb-6 border-b border-slate-800">
-        <div className="flex items-center gap-2 p-1 bg-slate-950 border border-slate-800 rounded-xl">
-          <button
-            type="button"
-            id="tab-method-url"
-            onClick={() => {
-              setActiveInputMethod('url');
-              setError(null);
-            }}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
-              activeInputMethod === 'url'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Globe className="w-4 h-4" />
-            <span>{language === 'fa' ? 'واکشی آنلاین با مرورگر کاربر' : 'Client Browser URL Scraping'}</span>
-          </button>
-
-          <button
-            type="button"
-            id="tab-method-chromedriver"
-            onClick={() => {
-              setActiveInputMethod('chromedriver');
-              setError(null);
-            }}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition cursor-pointer ${
-              activeInputMethod === 'chromedriver'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Terminal className="w-4 h-4" />
-            <span>{language === 'fa' ? 'سورس مستقیم / ChromeDriver' : 'ChromeDriver / Page Source'}</span>
-          </button>
+      {/* Top Bar: Extension Status & 1-Click Activation */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-5 mb-5 border-b border-slate-800">
+        <div className="flex items-center gap-2">
+          {extensionReady ? (
+            <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-emerald-950/80 border border-emerald-600/50 text-emerald-300 text-xs font-semibold shadow-lg shadow-emerald-950/40">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+              <span className="font-mono text-sm font-bold tracking-tight">I am ready</span>
+              <span className="text-slate-400 font-normal">
+                ({language === 'fa' ? `اکستنشن متصل است${extensionBrowser ? ` - ${extensionBrowser}` : ''}` : `Connected${extensionBrowser ? ` - ${extensionBrowser}` : ''}`})
+              </span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-950/40 border border-indigo-800/40 text-indigo-300 text-xs">
+              <Puzzle className="w-4 h-4 text-indigo-400 shrink-0" />
+              <span>
+                {language === 'fa'
+                  ? 'استخراج تمام فایل‌ها تماماً برعهده اکستنشن است:'
+                  : 'All file extraction is handled by the extension:'}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Engine status indicator */}
-        <div className="flex items-center gap-2 text-[11px] text-emerald-400 bg-emerald-950/40 border border-emerald-800/40 px-3 py-1.5 rounded-xl font-mono">
-          <Cpu className="w-3.5 h-3.5 shrink-0" />
-          <span>{language === 'fa' ? 'موتور کلاینت: پردازش ۱۰۰٪ در مرورگر (بدون خطای ۵۰۳)' : 'Client-Side Engine: 0% Server CPU (No 503 Limits)'}</span>
+        {/* Quick Download Buttons */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => handleDownloadExtension('firefox')}
+            disabled={isDownloadingExt !== null}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-orange-950/50 border border-slate-700 hover:border-orange-600/50 text-slate-200 hover:text-orange-300 transition cursor-pointer disabled:opacity-50"
+          >
+            <span>🦊</span>
+            <span>{isDownloadingExt === 'firefox' ? '...' : (language === 'fa' ? 'افزونه فایرفاکس' : 'Firefox Add-on')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleDownloadExtension('chrome')}
+            disabled={isDownloadingExt !== null}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-sky-950/50 border border-slate-700 hover:border-sky-600/50 text-slate-200 hover:text-sky-300 transition cursor-pointer disabled:opacity-50"
+          >
+            <span>🌐</span>
+            <span>{isDownloadingExt === 'chrome' ? '...' : (language === 'fa' ? 'اکستنشن کروم' : 'Chrome Extension')}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowInstallGuide(!showInstallGuide)}
+            className="text-[11px] text-slate-400 hover:text-indigo-300 underline underline-offset-4 px-1 py-1 transition cursor-pointer"
+          >
+            {showInstallGuide ? (language === 'fa' ? 'بستن راهنما' : 'Close Guide') : (language === 'fa' ? 'راهنمای ۱۰ ثانیه‌ای' : '10s Guide')}
+          </button>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Target URL Input */}
-        <div>
-          <label
-            htmlFor="target-url-input"
-            className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2"
-          >
-            {t.urlLabel}
-          </label>
-          <div className="relative">
-            <div
-              className={`absolute inset-y-0 ${
-                isRtl ? 'right-0 pr-3.5' : 'left-0 pl-3.5'
-              } flex items-center pointer-events-none text-slate-500`}
-            >
-              <Search className="w-5 h-5" />
-            </div>
-            <input
-              id="target-url-input"
-              type="text"
-              value={url}
-              onChange={(e) => {
-                setUrl(e.target.value);
-                if (error) setError(null);
-              }}
-              placeholder={t.urlPlaceholder}
-              dir="ltr"
-              disabled={isLoading}
-              className={`w-full rounded-xl border border-slate-700 bg-slate-950 py-3 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 transition-colors ${
-                isRtl ? 'pr-11 pl-4 text-left' : 'pl-11 pr-4'
-              }`}
-            />
+      {/* Guide Panel */}
+      {showInstallGuide && (
+        <div className="mb-5 p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-2">
+          <div className="font-semibold text-indigo-400">
+            {language === 'fa' ? 'فعال‌سازی اکستنشن (فقط یک‌بار):' : 'Activating the extension (one-time):'}
+          </div>
+          <ol className="list-decimal list-inside space-y-1 text-slate-400 leading-relaxed">
+            <li>
+              {language === 'fa'
+                ? 'فایل ZIP بالا را دانلود و پوشه آن را باز کنید.'
+                : 'Download the ZIP above and extract the folder.'}
+            </li>
+            <li>
+              {language === 'fa'
+                ? 'در کروم به chrome://extensions رفته، Developer mode را روشن کرده و دکمه Load unpacked را بزنید.'
+                : 'In Chrome, go to chrome://extensions, enable Developer mode, and click Load unpacked.'}
+            </li>
+            <li>
+              {language === 'fa'
+                ? 'در پنجره اکستنشن فقط «I am ready» نمایش می‌یابد و اگر در سایت دیگری باشید خودکار خاموش می‌شود.'
+                : 'The popup only shows "I am ready" on this site and turns OFF when on other sites.'}
+            </li>
+          </ol>
+        </div>
+      )}
+
+      {/* Notice if extension not installed yet */}
+      {!extensionReady && (
+        <div className="mb-4 px-3.5 py-2.5 rounded-xl bg-amber-950/30 border border-amber-800/40 text-amber-300 text-xs flex items-center gap-2.5">
+          <AlertCircle className="w-4 h-4 shrink-0 text-amber-400" />
+          <span>
+            {language === 'fa'
+              ? 'یادآوری: استخراج تمام فایل‌ها (HTML, CSS, JS, Media) تماماً برعهده اکستنشن است؛ با فعال کردن آن استخراج بدون محدودیت انجام می‌شود.'
+              : 'Reminder: All file extraction (HTML, CSS, JS, Media) is handled by the companion extension.'}
+          </span>
+        </div>
+      )}
+
+      {/* THE FORM: Contains ONLY the URL input field */}
+      <form id="url-input-form" onSubmit={handleSubmit} className="mb-4">
+        <label htmlFor="target-url-input" className="block text-xs font-semibold text-slate-300 mb-2">
+          {language === 'fa'
+            ? 'آدرس اینترنتی وب‌سایت برای استخراج تمام فایل‌ها (URL):'
+            : 'Target Website URL for Full Extraction:'}
+        </label>
+
+        <div className="relative flex items-center">
+          <div className="absolute inset-y-0 start-0 flex items-center ps-4 pointer-events-none text-slate-500">
+            <Globe className="w-5 h-5 text-indigo-400" />
           </div>
 
-          {error && <p className="text-xs text-rose-400 mt-2 font-medium">{error}</p>}
-
-          {/* Quick samples (only in URL mode) */}
-          {activeInputMethod === 'url' && (
-            <div className="flex items-center gap-2 mt-2.5 flex-wrap text-xs text-slate-500">
-              <span className="text-slate-400">{t.demoUrls}</span>
-              {sampleUrls.map((sUrl) => (
-                <button
-                  key={sUrl}
-                  type="button"
-                  onClick={() => setUrl(sUrl)}
-                  className="px-2.5 py-0.5 rounded-lg bg-slate-800/80 hover:bg-slate-800 hover:text-indigo-400 text-slate-400 border border-slate-700/60 transition font-mono text-[11px] cursor-pointer"
-                >
-                  {sUrl.replace(/^https?:\/\//, '')}
-                </button>
-              ))}
-            </div>
-          )}
+          <input
+            id="target-url-input"
+            type="text"
+            value={url}
+            onChange={(e) => {
+              setUrl(e.target.value);
+              if (error) setError(null);
+            }}
+            placeholder="https://example.com"
+            dir="ltr"
+            disabled={isLoading || isExtractingWithExt}
+            className="w-full ps-11 pe-4 py-3.5 bg-slate-950 border border-slate-700 rounded-xl text-sm font-mono text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition disabled:opacity-60"
+          />
         </div>
 
-        {/* If ChromeDriver / Source Code Method is active: Textarea & Guidance */}
-        {activeInputMethod === 'chromedriver' && (
-          <div className="space-y-3 bg-slate-950/80 p-4 sm:p-5 rounded-2xl border border-slate-800">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <label
-                htmlFor="custom-html-textarea"
-                className="flex items-center gap-2 text-xs font-semibold text-indigo-400 uppercase tracking-wider"
-              >
-                <Code2 className="w-4 h-4" />
-                <span>
-                  {language === 'fa'
-                    ? 'کدهای سورس HTML یا خروجی ChromeDriver (Page Source)'
-                    : 'Raw HTML Source / ChromeDriver Output'}
-                </span>
-              </label>
-
-              <button
-                type="button"
-                onClick={handleInsertSampleHtml}
-                className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-indigo-300 transition cursor-pointer font-medium"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>{language === 'fa' ? 'درج کد نمونه تستی' : 'Insert Test HTML'}</span>
-              </button>
-            </div>
-
-            <textarea
-              id="custom-html-textarea"
-              rows={6}
-              value={customHtml}
-              onChange={(e) => {
-                setCustomHtml(e.target.value);
-                if (error) setError(null);
-              }}
-              placeholder={
-                language === 'fa'
-                  ? 'کدهای HTML کامل صفحه (کپی‌شده از کلیک راست > View Page Source یا خروجی driver.page_source در پایتون/کروم‌درایور) را اینجا Paste کنید...'
-                  : 'Paste full page HTML (copied from View Page Source or driver.page_source in Selenium/ChromeDriver) here...'
-              }
-              dir="ltr"
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 p-3.5 text-xs font-mono text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
-            />
-
-            {/* Quick Helper Banner */}
-            <div className="p-3 bg-indigo-950/40 border border-indigo-900/50 rounded-xl text-xs text-indigo-200/90 leading-relaxed">
-              <p className="font-semibold text-indigo-300 mb-1 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-indigo-400 shrink-0" />
-                <span>
-                  {language === 'fa'
-                    ? 'راهنمای دور زدن سریع سایت‌های تحت کلودفلر یا کپچا:'
-                    : 'Guide for Cloudflare Captcha Protected Sites:'}
-                </span>
-              </p>
-              <p className="text-[11px] text-slate-300">
-                {language === 'fa'
-                  ? 'در صورتی که سایتی دارای سیستم ضد ربات (Cloudflare Turnstile/Bot Protection) باشد، سایت را در مرورگر کروم یا ChromeDriver باز کنید، کلیدهای Ctrl+U را بزنید، تمام سورس را کپی و در این کادر Paste کنید. مرورگر شما در یک لحظه تمام لینک‌ها، استایل‌ها، فونت‌ها و ۳ نمایشگر را استخراج می‌کند!'
-                  : 'If a site uses Cloudflare anti-bot or CAPTCHAs, simply open it in Chrome/ChromeDriver, press Ctrl+U, copy the page source, and paste it here. Your browser will instantly parse all links, CSS, headings, and 3-screen viewports!'}
-              </p>
-            </div>
-          </div>
+        {error && (
+          <p className="mt-2 text-xs text-rose-400 font-medium">{error}</p>
         )}
-
-        {/* Radio options: Only this page vs All links on the site */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2.5">
-            {t.fetchScopeTitle}
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            {/* Option 1: Single Page */}
-            <label
-              htmlFor="mode-single-radio"
-              className={`relative flex items-start gap-3 p-4 rounded-xl border transition-all cursor-pointer ${
-                mode === 'single'
-                  ? 'border-indigo-500 bg-indigo-950/40 text-slate-100 shadow-md shadow-indigo-950/50 ring-1 ring-indigo-500/40'
-                  : 'border-slate-800 hover:border-slate-700 bg-slate-950/50 hover:bg-slate-800/40 text-slate-300'
-              }`}
-            >
-              <input
-                id="mode-single-radio"
-                type="radio"
-                name="crawl-mode"
-                checked={mode === 'single'}
-                onChange={() => setMode('single')}
-                disabled={isLoading}
-                className="mt-1 h-4 w-4 text-indigo-500 border-slate-700 focus:ring-indigo-500 cursor-pointer accent-indigo-500"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-1.5 font-semibold text-sm text-slate-100 flex-wrap">
-                  <FileCode2 className="w-4 h-4 text-indigo-400 shrink-0" />
-                  <span>{t.fetchSinglePage}</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-slate-800 text-slate-400 border border-slate-700 font-semibold">
-                    {t.formZeroFoldersBadge}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-                  {t.fetchSinglePageDesc}
-                </p>
-              </div>
-            </label>
-
-            {/* Option 2: All links on the site */}
-            <label
-              htmlFor="mode-all-radio"
-              className={`relative flex items-start gap-3 p-4 rounded-xl border transition-all cursor-pointer ${
-                mode === 'all'
-                  ? 'border-indigo-500 bg-indigo-950/40 text-slate-100 shadow-md shadow-indigo-950/50 ring-1 ring-indigo-500/50'
-                  : 'border-slate-800 hover:border-slate-700 bg-slate-950/50 hover:bg-slate-800/40 text-slate-300'
-              }`}
-            >
-              <input
-                id="mode-all-radio"
-                type="radio"
-                name="crawl-mode"
-                checked={mode === 'all'}
-                onChange={() => setMode('all')}
-                disabled={isLoading}
-                className="mt-1 h-4 w-4 text-indigo-500 border-slate-700 focus:ring-indigo-500 cursor-pointer accent-indigo-500"
-              />
-              <div className="flex-1">
-                <div className="flex items-center gap-1.5 font-semibold text-sm text-slate-100 flex-wrap">
-                  <Layers className="w-4 h-4 text-indigo-400 shrink-0" />
-                  <span>{t.fetchAllLinks}</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-mono bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 font-semibold">
-                    {t.formDedicatedFoldersBadge}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">
-                  {t.fetchAllLinksDesc}
-                </p>
-              </div>
-            </label>
-          </div>
-
-          {/* If Mode is All: optional pages selector */}
-          {mode === 'all' && (
-            <div className="mt-3 p-3.5 bg-slate-950/60 rounded-xl border border-slate-800 flex items-center justify-between flex-wrap gap-2 text-xs">
-              <span className="text-slate-400 font-medium">{t.maxPagesLabel}</span>
-              <div className="flex items-center gap-2">
-                {[5, 8, 12, 15].map((count) => (
-                  <button
-                    key={count}
-                    type="button"
-                    onClick={() => setMaxPages(count)}
-                    className={`px-3 py-1 rounded-lg font-medium transition cursor-pointer text-xs ${
-                      maxPages === count
-                        ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30 font-semibold'
-                        : 'bg-slate-800/80 border border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white'
-                    }`}
-                  >
-                    {count} {t.formPagesCountSuffix}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Submit button */}
-        <div>
-          <button
-            id="start-scrape-button"
-            type="submit"
-            disabled={isLoading}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded-xl font-semibold text-sm text-white bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] transition shadow-lg shadow-indigo-600/25 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>{t.scrapingInProgress}</span>
-              </>
-            ) : (
-              <>
-                <Zap className="w-4 h-4 text-amber-300" />
-                <span>
-                  {activeInputMethod === 'chromedriver'
-                    ? language === 'fa'
-                      ? 'شروع استخراج فوری از کدهای داده‌شده و ساخت ۳ نمایشگر'
-                      : 'Extract Source & Build 3 Viewports'
-                    : t.startScraping}
-                </span>
-                {isRtl ? <ArrowLeft className="w-4 h-4" /> : <ArrowRight className="w-4 h-4" />}
-              </>
-            )}
-          </button>
-        </div>
       </form>
+
+      {/* DEDICATED BUTTON: STRICTLY OUTSIDE THE FORM */}
+      <div className="pt-1 pb-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <button
+          type="button"
+          id="btn-start-full-extraction"
+          onClick={handleFullExtractionClick}
+          disabled={isLoading || isExtractingWithExt}
+          className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 active:scale-[0.98] text-slate-950 font-extrabold rounded-xl text-sm shadow-xl shadow-emerald-950/50 flex items-center justify-center gap-2.5 transition cursor-pointer disabled:opacity-50"
+        >
+          {isLoading || isExtractingWithExt ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
+              <span>{language === 'fa' ? 'اکستنشن در حال استخراج تمام فایل‌ها...' : 'Extension Extracting All Files...'}</span>
+            </>
+          ) : (
+            <>
+              <span>{language === 'fa' ? 'استخراج کامل' : 'Full Extract'}</span>
+              {isRtl ? <ArrowLeft className="w-4 h-4 text-slate-950" /> : <ArrowRight className="w-4 h-4 text-slate-950" />}
+            </>
+          )}
+        </button>
+
+        {/* Extraction status badges */}
+        <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-mono">
+          <CheckCircle2 className="w-4 h-4" />
+          <span>
+            {extensionReady
+              ? (language === 'fa' ? 'استخراج مستقیم توسط اکستنشن' : 'Direct Extension Extraction')
+              : (language === 'fa' ? 'استخراج خودکار بدون کپی-پیست' : 'Zero-Copy Direct Scraping')}
+          </span>
+        </div>
+      </div>
+
+      {/* Feature Highlights: What is extracted */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-slate-800">
+        <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center gap-2 text-xs text-slate-300">
+          <FileCode2 className="w-4 h-4 text-sky-400 shrink-0" />
+          <span>{language === 'fa' ? 'تمام استایل‌ها (CSS)' : 'All CSS Styles'}</span>
+        </div>
+
+        <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center gap-2 text-xs text-slate-300">
+          <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>{language === 'fa' ? 'تمام کدهای جاوااسکریپت (JS)' : 'All JavaScript (JS)'}</span>
+        </div>
+
+        <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center gap-2 text-xs text-slate-300">
+          <Image className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{language === 'fa' ? 'تمام Assetها و تصاویر' : 'All Images & Assets'}</span>
+        </div>
+
+        <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center gap-2 text-xs text-slate-300">
+          <Film className="w-4 h-4 text-purple-400 shrink-0" />
+          <span>{language === 'fa' ? 'مدیاها، آیکون‌ها و فونت‌ها' : 'Media, SVGs & Fonts'}</span>
+        </div>
+      </div>
+
+      {/* Samples & Quick Links */}
+      <div className="flex items-center gap-2 flex-wrap text-xs pt-3 text-slate-500">
+        <span className="text-[11px] text-slate-400">{language === 'fa' ? 'نمونه‌ها:' : 'Samples:'}</span>
+        {sampleUrls.map((sUrl) => (
+          <button
+            key={sUrl}
+            type="button"
+            onClick={() => {
+              setUrl(sUrl);
+              setError(null);
+            }}
+            className="text-[11px] font-mono text-slate-400 hover:text-indigo-300 underline underline-offset-2 transition cursor-pointer"
+          >
+            {sUrl.replace('https://', '')}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };
