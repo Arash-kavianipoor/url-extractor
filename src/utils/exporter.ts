@@ -22,12 +22,18 @@ export function downloadFile(filename: string, content: string, mimeType = 'text
   URL.revokeObjectURL(url);
 }
 
+// Helper to safely instantiate JSZip across all bundlers (Vite, Rollup, Cloudflare Pages)
+function createZipInstance() {
+  const ctor = (JSZip as any)?.default || JSZip;
+  return new ctor();
+}
+
 export async function downloadZip(
   files: ExtractedFile[],
   zipName = 'offline_website_package.zip',
   mode: CrawlMode = 'single'
 ) {
-  const zip = new JSZip();
+  const zip = createZipInstance();
 
   if (mode === 'single') {
     // Single page mode: strictly NO folders at all, all files at the root of the ZIP
@@ -103,7 +109,7 @@ export async function downloadAllDevicesBundle(
   mode: CrawlMode = 'single',
   domain = 'website'
 ) {
-  const zip = new JSZip();
+  const zip = createZipInstance();
 
   const devices: DeviceType[] = ['desktop', 'tablet', 'mobile'];
   for (const dev of devices) {
