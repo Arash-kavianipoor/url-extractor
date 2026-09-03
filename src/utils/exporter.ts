@@ -343,31 +343,172 @@ export async function downloadAllDevicesBundle(
   URL.revokeObjectURL(url);
 }
 
-export function exportLinksToCsv(links: ScrapedLink[], filename = 'links.csv') {
-  const headers = ['Index', 'Text', 'URL', 'Type', 'Source URL'];
-  const rows = links.map((l, i) => [
-    i + 1,
-    `"${(l.text || '').replace(/"/g, '""')}"`,
-    `"${(l.url || '').replace(/"/g, '""')}"`,
-    l.type,
-    `"${(l.sourceUrl || '').replace(/"/g, '""')}"`,
-  ]);
+export interface StructuredCsvOptions {
+  exportTarget: 'combined' | 'links' | 'headings';
+  includeDevices?: boolean;
+  selectedHeadingLevels?: HeadingLevel[];
+  sourceDomain?: string;
+}
 
-  const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-  downloadFile(filename, csvContent, 'text/csv;charset=utf-8;');
+// Helper to escape and format a CSV cell safely with RFC 4180 rules
+function formatCsvCell(val: string | number | undefined | null): string {
+  if (val === undefined || val === null) return '""';
+  const str = String(val).replace(/\r\n/g, ' ').replace(/[\r\n]/g, ' ');
+  return `"${str.replace(/"/g, '""')}"`;
+}
+
+export function exportStructuredCsv(
+  links: ScrapedLink[],
+  headings: ScrapedHeading[],
+  options: StructuredCsvOptions,
+  filename?: string
+) {
+  const bom = '\uFEFF'; // UTF-8 Byte Order Mark for Microsoft Excel & Google Sheets compatibility
+  const includeDevices = options.includeDevices !== false;
+  const target = options.exportTarget || 'combined';
+
+  let finalFilename = filename;
+  const rows: string[][] = [];
+
+  if (target === 'combined') {
+    if (!finalFilename) finalFilename = 'website_structured_dataset.csv';
+
+    // Header row for combined dataset
+    const headers = [
+      'Record Type',
+      'Record ID',
+      'Type / Tag',
+      'Text / Content',
+      'Target URL',
+      ...(includeDevices ? ['Devices', 'Device Exclusivity'] : []),
+      'Found On (Source)',
+      'Extracted At',
+    ];
+    rows.push(headers);
+
+    const now = new Date().toISOString();
+
+    // 1. Add all links
+    links.forEach((l, idx) => {
+      const devs = l.devices && l.devices.length > 0 ? l.devices : ['desktop'];
+      const exclusivity = devs.length === 1 ? `${devs[0]} exclusive` : 'Universal';
+      rows.push([
+        'Link',
+        String(idx + 1),
+        l.type.toUpperCase(),
+        l.text || '(empty anchor)',
+        l.url,
+        ...(includeDevices ? [devs.join('; '), exclusivity] : []),
+        l.sourceUrl || '',
+        now,
+      ]);
+    });
+
+    // 2. Add all selected headings
+    const filteredHeadings =
+      options.selectedHeadingLevels && options.selectedHeadingLevels.length > 0
+        ? headings.filter((h) => options.selectedHeadingLevels!.includes(h.level))
+        : headings;
+
+    filteredHeadings.forEach((h, idx) => {
+      const devs = h.devices && h.devices.length > 0 ? h.devices : ['desktop'];
+      const exclusivity = devs.length === 1 ? `${devs[0]} exclusive` : 'Universal';
+      rows.push([
+        'Heading',
+        String(idx + 1),
+        h.level.toUpperCase(),
+        h.text || '(empty heading)',
+        '', // No destination URL for heading
+        ...(includeDevices ? [devs.join('; '), exclusivity] : []),
+        h.sourceUrl || '',
+        now,
+      ]);
+    });
+  } else if (target === 'links') {
+    if (!finalFilename) finalFilename = 'structured_links.csv';
+    const headers = [
+      'Index',
+      'Anchor Text',
+      'Destination URL',
+      'Link Type',
+      ...(includeDevices ? ['Devices', 'Device Exclusivity'] : []),
+      'Found On (Source URL)',
+    ];
+    rows.push(headers);
+
+    links.forEach((l, idx) => {
+      const devs = l.devices && l.devices.length > 0 ? l.devices : ['desktop'];
+      const exclusivity = devs.length === 1 ? `${devs[0]} exclusive` : 'Universal';
+      rows.push([
+        String(idx + 1),
+        l.text || '',
+        l.url,
+        l.type,
+        ...(includeDevices ? [devs.join('; '), exclusivity] : []),
+        l.sourceUrl || '',
+      ]);
+    });
+  } else {
+    // target === 'headings'
+    if (!finalFilename) finalFilename = 'structured_headings.csv';
+    const headers = [
+      'Index',
+      'Heading Level',
+      'Heading Text',
+      ...(includeDevices ? ['Devices', 'Device Exclusivity'] : []),
+      'Found On (Source URL)',
+    ];
+    rows.push(headers);
+
+    const filteredHeadings =
+      options.selectedHeadingLevels && options.selectedHeadingLevels.length > 0
+        ? headings.filter((h) => options.selectedHeadingLevels!.includes(h.level))
+        : headings;
+
+    filteredHeadings.forEach((h, idx) => {
+      const devs = h.devices && h.devices.length > 0 ? h.devices : ['desktop'];
+      const exclusivity = devs.length === 1 ? `${devs[0]} exclusive` : 'Universal';
+      rows.push([
+        String(idx + 1),
+        h.level.toUpperCase(),
+        h.text || '',
+        ...(includeDevices ? [devs.join('; '), exclusivity] : []),
+        h.sourceUrl || '',
+      ]);
+    });
+  }
+
+  const csvContent =
+    bom +
+    rows
+      .map((row) => row.map((cell) => formatCsvCell(cell)).join(','))
+      .join('\r\n');
+
+  downloadFile(finalFilename, csvContent, 'text/csv;charset=utf-8;');
+}
+
+export function exportLinksToCsv(links: ScrapedLink[], filename = 'links.csv') {
+  exportStructuredCsv(
+    links,
+    [],
+    {
+      exportTarget: 'links',
+      includeDevices: true,
+    },
+    filename
+  );
 }
 
 export function exportHeadingsToCsv(headings: ScrapedHeading[], filename = 'headings.csv') {
-  const headers = ['Index', 'Level', 'Heading Text', 'Source URL'];
-  const rows = headings.map((h, i) => [
-    i + 1,
-    h.level.toUpperCase(),
-    `"${(h.text || '').replace(/"/g, '""')}"`,
-    `"${(h.sourceUrl || '').replace(/"/g, '""')}"`,
-  ]);
-
-  const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-  downloadFile(filename, csvContent, 'text/csv;charset=utf-8;');
+  exportStructuredCsv(
+    [],
+    headings,
+    {
+      exportTarget: 'headings',
+      includeDevices: true,
+    },
+    filename
+  );
 }
 
 export interface JsonExportOptions {

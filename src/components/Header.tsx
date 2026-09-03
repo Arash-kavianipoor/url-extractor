@@ -1,79 +1,230 @@
-import { useState, useEffect } from "react";
-import { Globe, Cpu, Code2, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
+import React, { useState, useRef, useEffect } from 'react';
+import { ChevronDown, Check, Search, X, Sun, Moon } from 'lucide-react';
+import { Language } from '../types.js';
+import { translations, SUPPORTED_LANGUAGES, getLanguageInfo } from '../i18n.js';
+import { CountryFlag } from './CountryFlag.js';
+import siteLogo from '../assets/logo.webp';
 
 interface HeaderProps {
-  onOpenCodeModal: () => void;
+  language: Language;
+  onLanguageChange: (lang: Language) => void;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
 }
 
-export function Header({ onOpenCodeModal }: HeaderProps) {
-  const [hasGemini, setHasGemini] = useState<boolean | null>(null);
+export const Header: React.FC<HeaderProps> = ({
+  language,
+  onLanguageChange,
+  theme = 'dark',
+  onToggleTheme,
+}) => {
+  const t = translations[language];
+  const currentLang = getLanguageInfo(language);
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Close dropdown on outside click or escape
   useEffect(() => {
-    fetch("/api/health")
-      .then((res) => res.json())
-      .then((data) => {
-        setHasGemini(Boolean(data.hasGeminiKey));
-      })
-      .catch(() => {
-        setHasGemini(false);
-      });
-  }, []);
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  const filteredLanguages = SUPPORTED_LANGUAGES.filter((item) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      item.name.toLowerCase().includes(q) ||
+      item.nativeName.toLowerCase().includes(q) ||
+      item.code.toLowerCase().includes(q)
+    );
+  });
+
+  const handleSelectLanguage = (langCode: Language) => {
+    onLanguageChange(langCode);
+    setIsOpen(false);
+    setSearchQuery('');
+  };
 
   return (
-    <header className="border-b border-neutral-200 bg-white sticky top-0 z-30 shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-neutral-900 flex items-center justify-center text-white shadow-xs">
-            <Globe className="w-5 h-5 text-emerald-400" />
+    <header className="sticky top-0 z-40 relative backdrop-blur-2xl bg-slate-950/65 border-b border-white/[0.08] shadow-[0_4px_30px_rgba(0,0,0,0.35)] before:absolute before:inset-x-0 before:top-0 before:h-[1px] before:bg-gradient-to-r before:from-transparent before:via-white/25 before:to-transparent before:pointer-events-none transition-colors">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+        {/* Left: Brand Icon & Title */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-white/[0.07] border border-white/15 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(255,255,255,0.25)] shrink-0 group">
+            <img
+              src={siteLogo}
+              alt="Site Logo"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-neutral-900 tracking-tight">
-                Web Scraper
-              </h1>
-              <span className="px-2 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full">
-                DOM & AI Engine
-              </span>
-            </div>
-            <p className="text-xs text-neutral-500 hidden sm:block">
-              Extract structured web data, query CSS selectors, and export clean datasets
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent leading-none truncate">
+              {t.appTitle}
+            </h1>
+            <p className="text-xs text-slate-400 mt-1 hidden md:block truncate max-w-xl">
+              {t.appSubtitle}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          {/* AI Status Badge */}
-          <div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium bg-neutral-50 border-neutral-200 text-neutral-700"
-            title={hasGemini ? "Gemini 3.8 Flash AI is ready" : "Gemini API key is set or optional"}
+        {/* Right: Theme Switcher & Full 20 World Languages Selector Dropdown */}
+        <div className="flex items-center gap-2.5 shrink-0" ref={dropdownRef}>
+          {/* Dark / Light Mode Switch with Glassmorphic styling */}
+          <button
+            id="theme-toggle-btn"
+            type="button"
+            onClick={onToggleTheme}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 text-xs font-semibold border border-white/10 backdrop-blur-md transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] focus:outline-none focus:ring-2 focus:ring-indigo-500/60 cursor-pointer active:scale-[0.98]"
+            title={
+              theme === 'light'
+                ? language === 'fa'
+                  ? 'تغییر به حالت تاریک'
+                  : 'Switch to Dark Mode'
+                : language === 'fa'
+                ? 'تغییر به حالت روشن'
+                : 'Switch to Light Mode'
+            }
+            aria-label={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
           >
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-            <span className="hidden md:inline">Gemini AI:</span>
-            {hasGemini === null ? (
-              <span className="text-neutral-400">checking...</span>
-            ) : hasGemini ? (
-              <span className="text-emerald-700 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Active
-              </span>
+            {theme === 'light' ? (
+              <>
+                <Sun className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="font-medium hidden sm:inline">
+                  {language === 'fa' ? 'روشن' : 'Light'}
+                </span>
+              </>
             ) : (
-              <span className="text-neutral-500 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3 text-neutral-400" /> Available
+              <>
+                <Moon className="w-4 h-4 text-indigo-400 shrink-0" />
+                <span className="font-medium hidden sm:inline">
+                  {language === 'fa' ? 'تاریک' : 'Dark'}
+                </span>
+              </>
+            )}
+          </button>
+
+          {/* Full 20 World Languages Selector Dropdown with Glassmorphic styling */}
+          <div className="relative">
+            <button
+              id="language-selector-dropdown-btn"
+              type="button"
+              onClick={() => setIsOpen(!isOpen)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 text-xs font-semibold border border-white/10 backdrop-blur-md transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] focus:outline-none focus:ring-2 focus:ring-indigo-500/60 cursor-pointer active:scale-[0.98]"
+              aria-expanded={isOpen}
+              aria-haspopup="true"
+            >
+              <span className="inline-flex items-center justify-center shrink-0 drop-shadow-sm">
+                <CountryFlag language={language} size="sm" />
               </span>
+              <span className="font-medium">{currentLang.nativeName}</span>
+              <ChevronDown
+                className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${
+                  isOpen ? 'rotate-180 text-indigo-400' : ''
+                }`}
+              />
+            </button>
+
+            {/* Dropdown Menu Modal with Glassmorphism */}
+            {isOpen && (
+              <div
+                id="language-selector-menu"
+                className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-72 sm:w-80 bg-slate-950/85 border border-white/15 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.1)] py-2 z-50 animate-in fade-in zoom-in-95 duration-150 backdrop-blur-3xl"
+              >
+                {/* Search Bar inside Language Menu */}
+                <div className="px-3 pb-2 border-b border-white/[0.08]">
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 rtl:left-auto rtl:right-2.5 top-2.5 pointer-events-none" />
+                    <input
+                      id="language-search-input"
+                      type="text"
+                      autoFocus
+                      placeholder={t.searchLanguage || 'Search 20 world languages...'}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-white/[0.05] border border-white/10 rounded-lg pl-8 pr-7 rtl:pl-7 rtl:pr-8 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500/80 focus:bg-white/[0.08] transition"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-2 rtl:right-auto rtl:left-2 top-2 text-slate-400 hover:text-slate-200"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* 20 Languages List */}
+                <div className="max-h-72 overflow-y-auto p-1.5 space-y-0.5 custom-scrollbar">
+                  {filteredLanguages.length === 0 ? (
+                    <div className="px-3 py-4 text-center text-xs text-slate-500">
+                      No matching language found
+                    </div>
+                  ) : (
+                    filteredLanguages.map((item) => {
+                      const isSelected = language === item.code;
+                      return (
+                        <button
+                          key={item.code}
+                          id={`select-lang-${item.code}`}
+                          type="button"
+                          onClick={() => handleSelectLanguage(item.code)}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-indigo-600/90 text-white font-semibold shadow-md shadow-indigo-950/50'
+                              : 'text-slate-300 hover:bg-white/[0.07] hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="inline-flex items-center justify-center shrink-0 drop-shadow-sm">
+                              <CountryFlag language={item.code} size="sm" />
+                            </span>
+                            <div className="text-left rtl:text-right min-w-0">
+                              <div className="truncate font-medium">{item.nativeName}</div>
+                              <div className="text-[10px] text-slate-400 truncate opacity-80">
+                                {item.name}
+                              </div>
+                            </div>
+                          </div>
+                          {isSelected && (
+                            <Check className="w-4 h-4 text-white shrink-0 ml-2 rtl:ml-0 rtl:mr-2" />
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Footer Count Note */}
+                <div className="px-3 pt-2 border-t border-white/[0.08] text-[10px] text-slate-400 flex items-center justify-between">
+                  <span>20 World Languages</span>
+                  <span className="text-emerald-400 font-mono">0ms switch</span>
+                </div>
+              </div>
             )}
           </div>
-
-          {/* Scraper Code Export Button */}
-          <button
-            type="button"
-            id="open-code-generator-btn"
-            onClick={onOpenCodeModal}
-            className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-semibold text-neutral-800 bg-neutral-100 hover:bg-neutral-200 active:bg-neutral-300 rounded-lg border border-neutral-300 transition-colors"
-          >
-            <Code2 className="w-3.5 h-3.5 text-neutral-700" />
-            <span>Generate Code</span>
-          </button>
         </div>
       </div>
     </header>
   );
-}
+};

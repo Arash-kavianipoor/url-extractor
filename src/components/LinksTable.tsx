@@ -13,10 +13,17 @@ import {
   Laptop,
   Tablet,
   Smartphone,
+  Download,
+  Layers,
 } from 'lucide-react';
 import { ScrapedLink, ScrapedHeading, HeadingLevel, Language, LinkType, DeviceType } from '../types.js';
 import { translations, isRtlLanguage } from '../i18n.js';
-import { exportLinksToCsv, exportHeadingsToCsv, exportCustomJson } from '../utils/exporter.js';
+import {
+  exportLinksToCsv,
+  exportHeadingsToCsv,
+  exportStructuredCsv,
+  exportCustomJson,
+} from '../utils/exporter.js';
 
 interface LinksTableProps {
   links: ScrapedLink[];
@@ -53,6 +60,20 @@ export const LinksTable: React.FC<LinksTableProps> = ({
   const [exportIncludeLinks, setExportIncludeLinks] = useState(true);
   const [exportIncludeHeadings, setExportIncludeHeadings] = useState(true);
   const [selectedLevels, setSelectedLevels] = useState<Record<HeadingLevel, boolean>>({
+    h1: true,
+    h2: true,
+    h3: true,
+    h4: true,
+    h5: true,
+    h6: true,
+  });
+
+  // Structured CSV Export Modal State
+  const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+  const [csvExportTarget, setCsvExportTarget] = useState<'combined' | 'links' | 'headings'>('combined');
+  const [csvScope, setCsvScope] = useState<'filtered' | 'all'>('filtered');
+  const [csvIncludeDevices, setCsvIncludeDevices] = useState(true);
+  const [csvSelectedLevels, setCsvSelectedLevels] = useState<Record<HeadingLevel, boolean>>({
     h1: true,
     h2: true,
     h3: true,
@@ -202,6 +223,61 @@ export const LinksTable: React.FC<LinksTableProps> = ({
       'extracted_website_data.json'
     );
     setIsJsonModalOpen(false);
+  };
+
+  // Estimated row count for CSV export
+  const estimatedCsvRows = useMemo(() => {
+    const targetLinks = csvScope === 'filtered' ? filteredLinks : links;
+    const targetHeadings = csvScope === 'filtered' ? filteredHeadings : headings;
+    const activeLevels = (Object.keys(csvSelectedLevels) as HeadingLevel[]).filter(
+      (lvl) => csvSelectedLevels[lvl]
+    );
+    const filteredH = targetHeadings.filter((h) => activeLevels.includes(h.level));
+
+    if (csvExportTarget === 'combined') {
+      return targetLinks.length + filteredH.length;
+    } else if (csvExportTarget === 'links') {
+      return targetLinks.length;
+    } else {
+      return filteredH.length;
+    }
+  }, [
+    csvExportTarget,
+    csvScope,
+    filteredLinks,
+    links,
+    filteredHeadings,
+    headings,
+    csvSelectedLevels,
+  ]);
+
+  const handleExecuteCsvExport = () => {
+    const targetLinks = csvScope === 'filtered' ? filteredLinks : links;
+    const targetHeadings = csvScope === 'filtered' ? filteredHeadings : headings;
+    const activeLevels = (Object.keys(csvSelectedLevels) as HeadingLevel[]).filter(
+      (lvl) => csvSelectedLevels[lvl]
+    );
+
+    let filename = 'extracted_website_data.csv';
+    if (csvExportTarget === 'combined') {
+      filename = 'structured_links_and_headings.csv';
+    } else if (csvExportTarget === 'links') {
+      filename = 'structured_links.csv';
+    } else {
+      filename = 'structured_headings.csv';
+    }
+
+    exportStructuredCsv(
+      csvExportTarget === 'headings' ? [] : targetLinks,
+      csvExportTarget === 'links' ? [] : targetHeadings,
+      {
+        exportTarget: csvExportTarget,
+        includeDevices: csvIncludeDevices,
+        selectedHeadingLevels: activeLevels,
+      },
+      filename
+    );
+    setIsCsvModalOpen(false);
   };
 
   const getHeadingBadgeClass = (level: HeadingLevel) => {
@@ -359,26 +435,47 @@ export const LinksTable: React.FC<LinksTableProps> = ({
               </button>
             )}
 
-            {/* CSV Export Button */}
+            {/* Structured CSV Export Button */}
+            <button
+              id="export-structured-csv-btn"
+              onClick={() => {
+                setCsvExportTarget(activeSection === 'headings' ? 'headings' : 'combined');
+                setIsCsvModalOpen(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-500/50 bg-emerald-950/50 hover:bg-emerald-900/70 text-emerald-300 transition cursor-pointer shadow-sm shadow-emerald-950/50"
+              title={
+                language === 'fa'
+                  ? 'خروجی فایل اکسل و CSV ساختاریافته (شامل لینک‌ها و تیترها)'
+                  : 'Export structured CSV dataset with links and headings'
+              }
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{language === 'fa' ? 'خروجی ساختاریافته CSV' : 'Export Structured CSV'}</span>
+              <SlidersHorizontal className="w-3 h-3 text-emerald-400/70" />
+            </button>
+
+            {/* Quick 1-Click CSV Download Button for current view */}
             {activeSection === 'links' ? (
               <button
                 id="export-csv-btn"
                 onClick={() => exportLinksToCsv(filteredLinks)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
-                title="Download CSV of Links"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+                title={language === 'fa' ? 'دانلود سریع CSV لینک‌ها' : 'Quick download links CSV'}
               >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{t.exportCsv}</span>
+                <Download className="w-3 h-3 text-emerald-400" />
+                <span className="hidden sm:inline">{language === 'fa' ? 'سریع' : 'Quick'}</span>
+                <span>CSV</span>
               </button>
             ) : (
               <button
                 id="export-headings-csv-btn"
                 onClick={() => exportHeadingsToCsv(filteredHeadings)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
-                title="Download CSV of Headings H1-H6"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+                title={language === 'fa' ? 'دانلود سریع CSV تیترها' : 'Quick download headings CSV'}
               >
-                <FileSpreadsheet className="w-3.5 h-3.5 text-rose-400" />
-                <span>{t.exportCsv} (H1-H6)</span>
+                <Download className="w-3 h-3 text-rose-400" />
+                <span className="hidden sm:inline">{language === 'fa' ? 'سریع' : 'Quick'}</span>
+                <span>CSV</span>
               </button>
             )}
 
@@ -1030,6 +1127,350 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                 <FileJson className="w-4 h-4" />
                 <span>{t.downloadJsonBtn}</span>
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Structured CSV Export with Dataset Customization */}
+      {isCsvModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-2xl p-5 sm:p-6 max-w-xl w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header with Glassmorphic Highlight */}
+            <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-3.5 relative">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 shrink-0 shadow-inner">
+                  <FileSpreadsheet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                    <span>
+                      {language === 'fa'
+                        ? 'خروجی فایل اکسل و CSV ساختاریافته'
+                        : 'Structured CSV Dataset Export'}
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                      UTF-8 BOM
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    {language === 'fa'
+                      ? 'انتخاب نحوه ترکیب و ساختاردهی لینک‌ها و تیترهای استخراج‌شده جهت استفاده در Excel، Google Sheets و پردازش داده.'
+                      : 'Export extracted links and headings into a normalized, RFC-4180 structured CSV dataset optimized for Excel, Google Sheets, and data pipelines.'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsCsvModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition cursor-pointer"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Step 1: Export Target Selection (3 Options) */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
+                <span>{language === 'fa' ? '۱. فرمت و ساختار خروجی:' : '1. Export Structure & Content:'}</span>
+                <span className="text-[11px] text-emerald-400 font-mono">
+                  {estimatedCsvRows} {language === 'fa' ? 'سطر تخمینی' : 'rows estimated'}
+                </span>
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {/* Unified Dataset Option */}
+                <button
+                  type="button"
+                  onClick={() => setCsvExportTarget('combined')}
+                  className={`p-3 rounded-xl border text-left rtl:text-right transition cursor-pointer flex flex-col justify-between gap-2 ${
+                    csvExportTarget === 'combined'
+                      ? 'bg-emerald-950/40 border-emerald-500/60 ring-1 ring-emerald-500/50 shadow-md shadow-emerald-950/50'
+                      : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-400'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-100">
+                        <Layers className="w-4 h-4 text-emerald-400" />
+                        <span>{language === 'fa' ? 'مجموعه کامل' : 'Unified Data'}</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+                        {csvScope === 'filtered' ? filteredLinks.length + filteredHeadings.length : links.length + headings.length}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                      {language === 'fa'
+                        ? 'ترکیب یکپارچه لینک‌ها و سرتیترها (H1-H6)'
+                        : 'Unified links & headings in one normalized sheet'}
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-medium text-emerald-400/90">
+                    {language === 'fa' ? 'پیشنهادی برای تحلیل کامل' : 'Recommended'}
+                  </span>
+                </button>
+
+                {/* Links Only Option */}
+                <button
+                  type="button"
+                  onClick={() => setCsvExportTarget('links')}
+                  className={`p-3 rounded-xl border text-left rtl:text-right transition cursor-pointer flex flex-col justify-between gap-2 ${
+                    csvExportTarget === 'links'
+                      ? 'bg-indigo-950/40 border-indigo-500/60 ring-1 ring-indigo-500/50 shadow-md shadow-indigo-950/50'
+                      : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-400'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-100">
+                        <Link2 className="w-4 h-4 text-indigo-400" />
+                        <span>{language === 'fa' ? 'فقط لینک‌ها' : 'Links Only'}</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-500/30">
+                        {csvScope === 'filtered' ? filteredLinks.length : links.length}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                      {language === 'fa'
+                        ? 'انکرتکست، آدرس مقصد، نوع لینک و دستگاه‌ها'
+                        : 'Anchor texts, destination URLs & types'}
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-medium text-indigo-400/90">
+                    {language === 'fa' ? 'سئو و لینک‌سازی' : 'SEO & Routing'}
+                  </span>
+                </button>
+
+                {/* Headings Only Option */}
+                <button
+                  type="button"
+                  onClick={() => setCsvExportTarget('headings')}
+                  className={`p-3 rounded-xl border text-left rtl:text-right transition cursor-pointer flex flex-col justify-between gap-2 ${
+                    csvExportTarget === 'headings'
+                      ? 'bg-rose-950/40 border-rose-500/60 ring-1 ring-rose-500/50 shadow-md shadow-rose-950/50'
+                      : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-400'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-slate-100">
+                        <Heading className="w-4 h-4 text-rose-400" />
+                        <span>{language === 'fa' ? 'فقط تیترها' : 'Headings Only'}</span>
+                      </div>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-500/30">
+                        {csvScope === 'filtered' ? filteredHeadings.length : headings.length}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                      {language === 'fa'
+                        ? 'سلسله‌مراتب تیترها (H1 تا H6) و موقعیت صفحه'
+                        : 'Hierarchy (H1-H6) and content outline'}
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-medium text-rose-400/90">
+                    {language === 'fa' ? 'ساختار محتوایی' : 'Outline & Content'}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Step 2: Headings Level Selection (Shown if Target is combined or headings) */}
+            {(csvExportTarget === 'combined' || csvExportTarget === 'headings') && (
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                    <Heading className="w-3.5 h-3.5 text-rose-400" />
+                    <span>{language === 'fa' ? '۲. فیلتر سطوح تیترها (H1-H6):' : '2. Select Heading Levels:'}</span>
+                  </span>
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCsvSelectedLevels({
+                          h1: true,
+                          h2: true,
+                          h3: true,
+                          h4: true,
+                          h5: true,
+                          h6: true,
+                        })
+                      }
+                      className="text-indigo-400 hover:text-indigo-300 transition cursor-pointer"
+                    >
+                      {language === 'fa' ? 'انتخاب همه' : 'Select All'}
+                    </button>
+                    <span className="text-slate-600">•</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCsvSelectedLevels({
+                          h1: true,
+                          h2: true,
+                          h3: false,
+                          h4: false,
+                          h5: false,
+                          h6: false,
+                        })
+                      }
+                      className="text-slate-400 hover:text-slate-200 transition cursor-pointer"
+                    >
+                      {language === 'fa' ? 'فقط H1 & H2' : 'H1 & H2 only'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 pt-1">
+                  {(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] as HeadingLevel[]).map((lvl) => (
+                    <label
+                      key={lvl}
+                      className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-xs cursor-pointer transition ${
+                        csvSelectedLevels[lvl]
+                          ? 'bg-rose-950/40 border-rose-500/40 text-rose-200 font-semibold'
+                          : 'bg-slate-900 border-slate-800 text-slate-500'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={csvSelectedLevels[lvl]}
+                        onChange={(e) =>
+                          setCsvSelectedLevels((prev) => ({
+                            ...prev,
+                            [lvl]: e.target.checked,
+                          }))
+                        }
+                        className="w-3.5 h-3.5 rounded text-rose-600 focus:ring-rose-500 bg-slate-950 border-slate-700 cursor-pointer"
+                      />
+                      <span className="font-mono uppercase">{lvl}</span>
+                      <span className="text-[10px] opacity-70">({headingCounts[lvl] || 0})</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Scope & Device Columns Selection */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Scope Selector */}
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
+                <span className="text-xs font-semibold text-slate-300 block">
+                  {language === 'fa' ? '۳. محدوده داده‌های خروجی:' : '3. Export Scope:'}
+                </span>
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="csv-scope"
+                      value="filtered"
+                      checked={csvScope === 'filtered'}
+                      onChange={() => setCsvScope('filtered')}
+                      className="text-emerald-500 focus:ring-emerald-500 bg-slate-900 border-slate-700"
+                    />
+                    <span>
+                      {language === 'fa'
+                        ? `موارد فیلترشده فعلی (${activeSection === 'links' ? filteredLinks.length : filteredHeadings.length})`
+                        : `Current Filtered View (${activeSection === 'links' ? filteredLinks.length : filteredHeadings.length})`}
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="csv-scope"
+                      value="all"
+                      checked={csvScope === 'all'}
+                      onChange={() => setCsvScope('all')}
+                      className="text-emerald-500 focus:ring-emerald-500 bg-slate-900 border-slate-700"
+                    />
+                    <span>
+                      {language === 'fa'
+                        ? `کل داده‌های استخراج‌شده (${links.length} لینک، ${headings.length} تیتر)`
+                        : `All Extracted Items (${links.length} links, ${headings.length} headings)`}
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Device Compatibility Columns Toggle */}
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between gap-2">
+                <div>
+                  <span className="text-xs font-semibold text-slate-300 block">
+                    {language === 'fa' ? '۴. ستون‌های چند دستگاهی:' : '4. Multi-Device Compatibility:'}
+                  </span>
+                  <label className="flex items-start gap-2.5 mt-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={csvIncludeDevices}
+                      onChange={(e) => setCsvIncludeDevices(e.target.checked)}
+                      className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500 bg-slate-900 border-slate-700 mt-0.5 cursor-pointer"
+                    />
+                    <div className="text-xs text-slate-300">
+                      <span className="font-medium text-slate-200">
+                        {language === 'fa' ? 'افزودن ستون‌های تفکیک دستگاه' : 'Include Device Support Columns'}
+                      </span>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        {language === 'fa'
+                          ? 'شامل دسته‌بندی دسکتاپ، تبلت، موبایل و وضعیت انحصار'
+                          : 'Desktop, Tablet, Mobile and exclusivity classification'}
+                      </p>
+                    </div>
+                  </label>
+                </div>
+                <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
+                  <Laptop className="w-3 h-3 text-sky-400" />
+                  <Tablet className="w-3 h-3 text-purple-400" />
+                  <Smartphone className="w-3 h-3 text-emerald-400" />
+                  <span>3-Device Emulation Schema</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Portability & Excel Compatibility Note */}
+            <div className="p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2">
+              <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                {language === 'fa'
+                  ? 'این فایل شامل علامت UTF-8 BOM است؛ متن‌های فارسی و کاراکترهای خاص بدون به‌هم‌ریختگی مستقیماً در نرم‌افزار Excel و Google Sheets باز می‌شوند.'
+                  : 'Encoded with UTF-8 BOM for zero-corruption character display in Microsoft Excel (Windows/macOS), Apple Numbers, and Google Sheets.'}
+              </span>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-800">
+              <span className="text-xs text-slate-400 font-mono">
+                {estimatedCsvRows === 0 ? (
+                  <span className="text-amber-400 font-semibold">
+                    {language === 'fa' ? 'هیچ سطری برای خروجی انتخاب نشده است' : 'No items match selected filters'}
+                  </span>
+                ) : (
+                  <span>
+                    {language === 'fa' ? 'تعداد سطرهای فایل:' : 'Ready to export:'}{' '}
+                    <strong className="text-emerald-400">{estimatedCsvRows}</strong> {language === 'fa' ? 'سطر' : 'records'}
+                  </span>
+                )}
+              </span>
+
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsCsvModalOpen(false)}
+                  className="px-3.5 py-2 text-xs rounded-xl font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 transition cursor-pointer"
+                >
+                  {t.cancelBtn}
+                </button>
+                <button
+                  type="button"
+                  id="modal-confirm-download-csv"
+                  onClick={handleExecuteCsvExport}
+                  disabled={estimatedCsvRows === 0}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-xs rounded-xl font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-lg shadow-emerald-600/25 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>
+                    {language === 'fa'
+                      ? 'دانلود فایل CSV ساختاریافته'
+                      : 'Download Structured CSV'}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
