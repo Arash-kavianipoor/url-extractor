@@ -25,6 +25,7 @@ import { CodeEditor } from './components/CodeEditor.js';
 import { LivePreview } from './components/LivePreview.js';
 import { FetchProgressBar } from './components/FetchProgressBar.js';
 import { downloadZip, downloadAllDevicesBundle } from './utils/exporter.js';
+import { parseHtmlInBrowser, fetchTargetHtmlInBrowser, fetchMultiDeviceHtmlInBrowser } from './utils/clientScraper.js';
 import { updateDocumentSeo } from './seo/seoManager.js';
 import { SEO_LANGUAGES } from './seo/seoConfig.js';
 
@@ -67,8 +68,13 @@ export default function App() {
   const [selectedDevice, setSelectedDevice] = useState<DeviceType>('desktop');
   const [editedFiles, setEditedFiles] = useState<ExtractedFile[]>([]);
   const [originalFiles, setOriginalFiles] = useState<ExtractedFile[]>([]);
-  const [activeTab, setActiveTab] = useState<'links' | 'headings' | 'editor' | 'preview'>('links');
+  const [activeTab, setActiveTab] = useState<'links' | 'headings' | 'editor' | 'preview'>('preview');
   const [isZippingAll, setIsZippingAll] = useState<boolean>(false);
+  const [deviceProgress, setDeviceProgress] = useState<Partial<Record<DeviceType, { status: string; percent: number }>>>({
+    desktop: { status: 'آماده', percent: 0 },
+    tablet: { status: 'آماده', percent: 0 },
+    mobile: { status: 'آماده', percent: 0 },
+  });
 
   const t = translations[language];
   const isRtl = isRtlLanguage(language);
@@ -114,20 +120,88 @@ export default function App() {
     }
   };
 
-  const handleScrape = async (url: string, mode: CrawlMode, maxPages: number) => {
+  const handleScrape = async (
+    url: string,
+    mode: CrawlMode,
+    maxPages: number,
+    customHtml?: string
+  ) => {
     setIsLoading(true);
     setActiveScrapeUrl(url);
     setActiveScrapeMode(mode);
     setErrorMessage(null);
+    setDeviceProgress({
+      desktop: {
+        status: language === 'fa' ? 'اتصال به سرور و دانلود کتابخانه‌ها...' : 'Connecting to server & downloading libraries...',
+        percent: 20,
+      },
+      tablet: {
+        status: language === 'fa' ? 'واکشی استایل‌ها، فونت‌ها و فایل‌های CSS...' : 'Fetching styles, fonts & CSS files...',
+        percent: 20,
+      },
+      mobile: {
+        status: language === 'fa' ? 'آماده‌سازی پکیج آفلاین...' : 'Preparing offline bundle...',
+        percent: 20,
+      },
+    });
+
+    const progressTimer = setInterval(() => {
+      setDeviceProgress((prev) => ({
+        desktop: {
+          status: language === 'fa' ? 'دانلود کتابخانه‌ها و اسکریپت‌های سرور...' : 'Downloading server libraries & scripts...',
+          percent: Math.min(prev.desktop.percent + 6, 88),
+        },
+        tablet: {
+          status: language === 'fa' ? 'دریافت و فشرده‌سازی استایل‌های CSS...' : 'Fetching & embedding CSS styles...',
+          percent: Math.min(prev.tablet.percent + 6, 88),
+        },
+        mobile: {
+          status: language === 'fa' ? 'ساخت فایل‌های آفلاین دیوایس‌ها...' : 'Building offline device files...',
+          percent: Math.min(prev.mobile.percent + 6, 88),
+        },
+      }));
+    }, 450);
 
     try {
-      const response = await fetch('/api/scrape', {
+      let data: ScrapeResult | null = null;
+
+      // Primary: Complete Server-Side Scraping Pipeline (fetches all CSS stylesheets, webfonts & JS libraries)
+      let response = await fetch('/api/scrape', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url, mode, maxPages }),
+        body: JSON.stringify({ url, mode, maxPages, customHtml }),
       });
+
+      // If server was blocked with 503 by target site (e.g. Cloudflare bot protection) and customHtml wasn't provided:
+      if (!response.ok && response.status === 503 && (!customHtml || !customHtml.trim())) {
+        try {
+          // Attempt client-side browser fetch with authentic device profiles
+          const deviceHtmlMap = await fetchMultiDeviceHtmlInBrowser(url, (device, status, percent) => {
+            setDeviceProgress((prev) => ({
+              ...prev,
+              [device]: { status, percent: Math.min(percent, 75) },
+            }));
+          });
+
+          // Send the authentic browser-fetched HTML to server to extract and fetch ALL stylesheets, webfonts and JS libraries!
+          response = await fetch('/api/scrape', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url,
+              mode,
+              maxPages,
+              customHtml: deviceHtmlMap.desktop,
+            }),
+          });
+        } catch {}
+      }
+
+      clearInterval(progressTimer);
 
       if (!response.ok) {
         let errMessage = '';
@@ -140,12 +214,11 @@ export default function App() {
             errMessage = `HTTP ${response.status}: Failed to scrape target URL.`;
           }
         } else {
-          // Cloudflare HTML error pages (e.g., 503 Worker subrequest/CPU limit)
           if (response.status === 503) {
             errMessage =
               language === 'fa'
-                ? 'خطای ۵۰۳ سرویس کلودفلر: ورکر به محدودیت ۵۰ ریکوئست یا زمان پردازش CPU رسید یا سایت هدف دسترسی ربات را مسدود کرده است.'
-                : 'Cloudflare 503 Service Unavailable: The worker exceeded subrequest/CPU limits or the target site blocked access.';
+                ? 'خطای ۵۰۳: دسترسی سرور به سایت هدف محدود شد. لطفاً از تب «سورس مستقیم / ChromeDriver» در بالای فرم استفاده کنید و کدهای صفحه را Paste نمایید تا سرور تمام استایل‌ها و کتابخانه‌ها را کامل استخراج کند.'
+                : '503 Blocked: Target website blocked automated scrapers. Please use the "ChromeDriver / Page Source" tab above to paste the HTML directly.';
           } else {
             errMessage = `HTTP ${response.status} (${response.statusText || 'Server Error'})`;
           }
@@ -153,7 +226,26 @@ export default function App() {
         throw new Error(errMessage || 'Failed to fetch the target URL.');
       }
 
-      const data = await response.json();
+      data = await response.json();
+
+      setDeviceProgress({
+        desktop: {
+          status: language === 'fa' ? 'تکمیل شد (استایل‌ها و کتابخانه‌ها کامل)' : 'Done (Full styles & libraries bundled)',
+          percent: 100,
+        },
+        tablet: {
+          status: language === 'fa' ? 'تکمیل شد (استایل‌ها و کتابخانه‌ها کامل)' : 'Done (Full styles & libraries bundled)',
+          percent: 100,
+        },
+        mobile: {
+          status: language === 'fa' ? 'تکمیل شد (استایل‌ها و کتابخانه‌ها کامل)' : 'Done (Full styles & libraries bundled)',
+          percent: 100,
+        },
+      });
+
+      if (!data) {
+        throw new Error('Failed to parse website content.');
+      }
 
       setResult(data);
       // Select desktop by default and load desktop files
@@ -161,8 +253,10 @@ export default function App() {
       const initialFiles = data.deviceVersions?.desktop?.files || data.files || [];
       setOriginalFiles(JSON.parse(JSON.stringify(initialFiles)));
       setEditedFiles(JSON.parse(JSON.stringify(initialFiles)));
-      setActiveTab('links');
+      // Automatically switch to the 3-Screen Live Preview as requested by user
+      setActiveTab('preview');
     } catch (err: any) {
+      clearInterval(progressTimer);
       setErrorMessage(err.message || 'An unexpected error occurred.');
     } finally {
       setIsLoading(false);
@@ -493,25 +587,32 @@ export default function App() {
                   language={language}
                   currentDevice={selectedDevice}
                   onDeviceChange={handleSelectDevice}
+                  deviceVersions={result.deviceVersions}
+                  targetUrl={result.targetUrl}
+                  isLoading={isLoading}
+                  deviceProgress={deviceProgress}
+                  onQuickScrape={(u) => handleScrape(u, 'single', 1)}
                 />
               )}
             </div>
           </div>
         ) : (
-          /* Empty Initial State / Guides */
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-8 sm:p-12 text-center shadow-xl shadow-black/20">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-950/60 border border-indigo-500/30 flex items-center justify-center mx-auto text-indigo-400 mb-4 shadow-lg shadow-indigo-950/50">
-              <Globe className="w-7 h-7" />
-            </div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-100 mb-2">
-              {t.emptyStateTitle}
-            </h2>
-            <p className="text-sm text-slate-400 max-w-lg mx-auto mb-8 leading-relaxed">
-              {t.emptyStateDesc}
-            </p>
+          /* Pre-Fetch & Standby State: 3 Device Browsers (Desktop / Tablet / Mobile) Are Displayed Immediately */
+          <div className="space-y-8">
+            <LivePreview
+              files={[]}
+              language={language}
+              currentDevice={selectedDevice}
+              onDeviceChange={handleSelectDevice}
+              targetUrl={activeScrapeUrl || 'https://example.com'}
+              isLoading={isLoading}
+              deviceProgress={deviceProgress}
+              onQuickScrape={(u) => handleScrape(u, 'single', 1)}
+            />
 
-            <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto ${isRtl ? 'text-right' : 'text-left'}`}>
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/50 flex flex-col justify-between hover:border-slate-700 transition-colors">
+            {/* Quick Tips and Capabilities Guide */}
+            <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto ${isRtl ? 'text-right' : 'text-left'}`}>
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between hover:border-slate-700 transition-colors">
                 <div className="flex items-center gap-2 font-semibold text-xs text-slate-200 mb-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>{t.tipLinkExtraction}</span>
@@ -521,7 +622,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/50 flex flex-col justify-between hover:border-slate-700 transition-colors">
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between hover:border-slate-700 transition-colors">
                 <div className="flex items-center gap-2 font-semibold text-xs text-slate-200 mb-1.5">
                   <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />
                   <span>{t.tipAssetsSourceCode}</span>
@@ -531,7 +632,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/50 flex flex-col justify-between hover:border-slate-700 transition-colors">
+              <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between hover:border-slate-700 transition-colors">
                 <div className="flex items-center gap-2 font-semibold text-xs text-slate-200 mb-1.5">
                   <CheckCircle2 className="w-4 h-4 text-purple-400 shrink-0" />
                   <span>{t.tipLiveEditorZip}</span>

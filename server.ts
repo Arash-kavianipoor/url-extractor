@@ -50,10 +50,69 @@ async function startServer() {
     });
   });
 
+  // Lightweight raw pass-through proxy with realistic device headers (Zero CPU / No subrequest loops)
+  const DEVICE_HEADERS: Record<string, Record<string, string>> = {
+    desktop: {
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+      'Sec-CH-UA': '"Chromium";v="133", "Google Chrome";v="133", "Not?A_Brand";v="99"',
+      'Sec-CH-UA-Mobile': '?0',
+      'Sec-CH-UA-Platform': '"Windows"',
+      'Sec-CH-Viewport-Width': '1280',
+      'Viewport-Width': '1280',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9,fa;q=0.8',
+    },
+    tablet: {
+      'User-Agent':
+        'Mozilla/5.0 (iPad; CPU OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
+      'Sec-CH-UA-Mobile': '?1',
+      'Sec-CH-UA-Platform': '"macOS"',
+      'Sec-CH-Viewport-Width': '768',
+      'Viewport-Width': '768',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9,fa;q=0.8',
+    },
+    mobile: {
+      'User-Agent':
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
+      'Sec-CH-UA': '"Chromium";v="133", "Mobile Safari";v="17.4", "Not?A_Brand";v="99"',
+      'Sec-CH-UA-Mobile': '?1',
+      'Sec-CH-UA-Platform': '"iOS"',
+      'Sec-CH-Viewport-Width': '390',
+      'Viewport-Width': '390',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9,fa;q=0.8',
+    },
+  };
+
+  app.get('/api/proxy', async (req, res) => {
+    try {
+      const targetUrl = (req.query.url as string) || '';
+      const device = ((req.query.device as string) || 'desktop').toLowerCase();
+      if (!targetUrl || !/^https?:\/\//i.test(targetUrl)) {
+        res.status(400).json({ error: 'Valid URL parameter required' });
+        return;
+      }
+      const deviceHeaders = DEVICE_HEADERS[device] || DEVICE_HEADERS.desktop;
+      const response = await fetch(targetUrl, {
+        headers: deviceHeaders,
+        redirect: 'follow',
+      });
+      const text = await response.text();
+      const cType = response.headers.get('content-type') || 'text/html; charset=utf-8';
+      res.setHeader('Content-Type', cType);
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.status(response.status).send(text);
+    } catch (err: any) {
+      res.status(502).json({ error: err.message || 'Failed to fetch proxy target' });
+    }
+  });
+
   // Scrape endpoint
   app.post('/api/scrape', async (req, res) => {
     try {
-      const { url, mode, maxPages } = req.body;
+      const { url, mode, maxPages, customHtml } = req.body;
       if (!url || typeof url !== 'string') {
         res.status(400).json({ error: 'URL parameter is required and must be a valid string.' });
         return;
@@ -62,7 +121,7 @@ async function startServer() {
       const crawlMode = mode === 'all' ? 'all' : 'single';
       const pagesLimit = typeof maxPages === 'number' ? Math.min(Math.max(1, maxPages), 20) : 10;
 
-      const result = await scrapeWebPage(url, crawlMode, pagesLimit);
+      const result = await scrapeWebPage(url, crawlMode, pagesLimit, customHtml);
       res.json(result);
     } catch (error: any) {
       console.error('Scraping error:', error);

@@ -61,6 +61,10 @@ export interface DeviceVersion {
   totalBytes: number;
   viewport: string;
   userAgent: string;
+  links?: ScrapedLink[];
+  headings?: ScrapedHeading[];
+  headingsCount?: Record<HeadingLevel, number>;
+  rawHtml?: string;
 }
 
 export interface ExtractedFile {

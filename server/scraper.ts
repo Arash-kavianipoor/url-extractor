@@ -565,8 +565,8 @@ async function processCssContent(
     }
   }
 
-  // Pre-fetch key fonts and images with concurrency pooling (top 20 priority assets)
-  await runWithConcurrency(distinctAssetPaths.slice(0, 20), 8, async (assetPath) => {
+  // Pre-fetch key fonts and images with concurrency pooling (top 80 priority font/icon/image assets)
+  await runWithConcurrency(distinctAssetPaths.slice(0, 80), 10, async (assetPath) => {
     if (!tracker.canFetch()) return;
     try {
       const resolvedAssetUrl = new URL(assetPath, cssBaseUrl).href;
@@ -650,7 +650,8 @@ async function processHtmlForOffline(
     }
   });
 
-  // Clean out analytics and tracking scripts
+  // Clean out analytics and tracking scripts, and remove remote script links
+  // (All remote libraries are bundled into scripts.js so the page works 100% offline)
   $('script').each((_, elem) => {
     const src = $(elem).attr('src') || '';
     const content = $(elem).html() || '';
@@ -658,6 +659,11 @@ async function processHtmlForOffline(
       (trackerDomain) => src.includes(trackerDomain) || content.includes(trackerDomain)
     );
     if (isTracker) {
+      $(elem).remove();
+      return;
+    }
+
+    if (src && !src.startsWith('data:') && !src.startsWith('blob:')) {
       $(elem).remove();
     }
   });
@@ -1173,7 +1179,8 @@ img, picture, source {
 export async function scrapeWebPage(
   startUrlInput: string,
   mode: CrawlMode = 'single',
-  maxPages = 10
+  maxPages = 10,
+  customHtml?: string
 ): Promise<ScrapeResult> {
   const startTime = Date.now();
   let parsedStartUrl: URL;
@@ -1234,36 +1241,40 @@ export async function scrapeWebPage(
     visitedUrls.add(normalizedUrl);
 
     try {
-      let response: { ok: boolean; status: number; text: string; contentType: string; finalUrl: string };
-      try {
-        response = await fetchWithTimeout(
-          currentUrl,
-          12000,
-          tracker,
-          'document',
-          undefined,
-          cookieJar
-        );
-      } catch (firstErr: any) {
-        // If HTTPS fails and was auto-prepended, try HTTP fallback
-        if (currentUrl.startsWith('https://') && !startUrlInput.startsWith('https://')) {
-          const httpUrl = currentUrl.replace(/^https:\/\//i, 'http://');
+      let html: string;
+      if (customHtml && customHtml.trim() && visitedUrls.size === 1) {
+        html = customHtml;
+      } else {
+        let response: { ok: boolean; status: number; text: string; contentType: string; finalUrl: string };
+        try {
           response = await fetchWithTimeout(
-            httpUrl,
+            currentUrl,
             12000,
             tracker,
             'document',
             undefined,
             cookieJar
           );
-        } else {
-          throw firstErr;
+        } catch (firstErr: any) {
+          // If HTTPS fails and was auto-prepended, try HTTP fallback
+          if (currentUrl.startsWith('https://') && !startUrlInput.startsWith('https://')) {
+            const httpUrl = currentUrl.replace(/^https:\/\//i, 'http://');
+            response = await fetchWithTimeout(
+              httpUrl,
+              12000,
+              tracker,
+              'document',
+              undefined,
+              cookieJar
+            );
+          } else {
+            throw firstErr;
+          }
         }
+
+        if (!response.ok) continue;
+        html = response.text;
       }
-
-      if (!response.ok) continue;
-
-      const html = response.text;
       const $ = cheerio.load(html);
 
       const pageTitle = $('title').text().trim() || domain;
@@ -1621,24 +1632,33 @@ export async function scrapeWebPage(
     `// ========================================================================\n// OFFLINE JAVASCRIPT BUNDLE\n// Extracted from ${startUrlInput}\n// ========================================================================\n`,
   ];
 
-  // Fetch external scripts (prioritized to key UI libraries)
-  for (const jsUrl of Array.from(discoveredScriptUrls).slice(0, 10)) {
-    if (!tracker.canFetch()) break;
+  // Fetch external scripts (libraries, UI frameworks, plugins) concurrently
+  const scriptList = Array.from(discoveredScriptUrls).slice(0, 40);
+  const fetchedScripts = await runWithConcurrency(scriptList, 6, async (jsUrl) => {
+    if (!tracker.canFetch()) return null;
     try {
       const jsRes = await fetchWithTimeout(
         jsUrl,
-        7000,
+        8000,
         tracker,
         'script',
         parsedStartUrl.href,
         cookieJar
       );
-      if (jsRes.ok && jsRes.text && jsRes.text.length < 800000) {
-        jsSections.push(
-          `// --- Script from ${jsUrl} ---\n(function(){\ntry {\n${jsRes.text}\n} catch(e){ console.warn("Error in script ${jsUrl}:", e); }\n})();\n`
-        );
+      if (jsRes.ok && jsRes.text && jsRes.text.length < 3 * 1024 * 1024) {
+        return {
+          url: jsUrl,
+          content: `// --- Script from ${jsUrl} ---\n(function(){\ntry {\n${jsRes.text}\n} catch(e){ console.warn("Error in script ${jsUrl}:", e); }\n})();\n`,
+        };
       }
     } catch {}
+    return null;
+  });
+
+  for (const s of fetchedScripts) {
+    if (s && s.content) {
+      jsSections.push(s.content);
+    }
   }
 
   // Include extracted inline scripts
