@@ -127,4 +127,19 @@ export const zh: TranslationType = {
   paginationOf: '共',
   paginationLinks: '个链接',
   paginationHeadings: '个标题',
+
+  // Device-specific translations
+  downloadDesktopZip: '下载桌面版 (ZIP)',
+  downloadTabletZip: '下载平板版 (ZIP)',
+  downloadMobileZip: '下载手机版 (ZIP)',
+  downloadAllDevicesZip: '下载全部3个版本 (完整离线包)',
+  deviceDesktop: '桌面端',
+  deviceTablet: '平板端',
+  deviceMobile: '移动端',
+  deviceAll: '全部3种设备',
+  deviceVersionTitle: '提供3种设备视口版本',
+  deviceVersionDesc: '通过模拟真实的桌面端、平板端和移动端浏览器进行抓取，完整保留自适应布局、媒体与导航。',
+  activeDeviceLabel: '当前设备视口',
+  badgeDeviceEmulation: '3x 设备模拟',
+  deviceZipDownloaded: '设备离线包下载成功！',
 };

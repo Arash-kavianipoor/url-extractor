@@ -127,4 +127,19 @@ export const vi: TranslationType = {
   paginationOf: 'trên tổng số',
   paginationLinks: 'liên kết',
   paginationHeadings: 'tiêu đề',
+
+  // Device-specific translations
+  downloadDesktopZip: 'Tải phiên bản Máy tính (ZIP)',
+  downloadTabletZip: 'Tải phiên bản Máy tính bảng (ZIP)',
+  downloadMobileZip: 'Tải phiên bản Di động (ZIP)',
+  downloadAllDevicesZip: 'Tải cả 3 phiên bản (Gói đầy đủ)',
+  deviceDesktop: 'Máy tính',
+  deviceTablet: 'Máy tính bảng',
+  deviceMobile: 'Di động',
+  deviceAll: 'Cả 3 thiết bị',
+  deviceVersionTitle: 'Có sẵn 3 phiên bản thiết bị',
+  deviceVersionDesc: 'Được thu thập với mô phỏng trình duyệt Máy tính, Máy tính bảng và Di động xác thực để nắm bắt bố cục thích ứng, phương tiện và điều hướng.',
+  activeDeviceLabel: 'Chế độ xem thiết bị hiện tại',
+  badgeDeviceEmulation: 'MÔ PHỎNG 3x THIẾT BỊ',
+  deviceZipDownloaded: 'Gói thiết bị đã được tải xuống thành công!',
 };

@@ -127,4 +127,19 @@ export const ja: TranslationType = {
   paginationOf: '/',
   paginationLinks: '件のリンク',
   paginationHeadings: '件の見出し',
+
+  // Device-specific translations
+  downloadDesktopZip: 'デスクトップ版をダウンロード (ZIP)',
+  downloadTabletZip: 'タブレット版をダウンロード (ZIP)',
+  downloadMobileZip: 'モバイル版をダウンロード (ZIP)',
+  downloadAllDevicesZip: '全3バージョンを一括ダウンロード (完全バンドル)',
+  deviceDesktop: 'デスクトップ',
+  deviceTablet: 'タブレット',
+  deviceMobile: 'モバイル',
+  deviceAll: '全3デバイス',
+  deviceVersionTitle: '3つのデバイス対応バージョン',
+  deviceVersionDesc: 'PC、タブレット、スマートフォンの本格的なブラウザエミュレーションにより、レスポンシブなレイアウトやメディア、ナビゲーションを忠実に取得します。',
+  activeDeviceLabel: '現在のデバイス表示',
+  badgeDeviceEmulation: '3x デバイスエミュレーション',
+  deviceZipDownloaded: 'デバイスパッケージが正常にダウンロードされました！',
 };

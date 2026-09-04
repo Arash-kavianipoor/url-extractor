@@ -127,4 +127,19 @@ export const nl: TranslationType = {
   paginationOf: 'van',
   paginationLinks: 'links',
   paginationHeadings: 'koppen',
+
+  // Device-specific translations
+  downloadDesktopZip: 'Desktop-versie downloaden (ZIP)',
+  downloadTabletZip: 'Tablet-versie downloaden (ZIP)',
+  downloadMobileZip: 'Mobiele versie downloaden (ZIP)',
+  downloadAllDevicesZip: 'Alle 3 versies downloaden (Compleet pakket)',
+  deviceDesktop: 'Desktop',
+  deviceTablet: 'Tablet',
+  deviceMobile: 'Mobiel',
+  deviceAll: 'Alle 3 apparaten',
+  deviceVersionTitle: '3 apparaatversies beschikbaar',
+  deviceVersionDesc: 'Opgehaald met authentieke Desktop-, Tablet- en Mobiele browseremulatie om responsieve lay-outs, media en navigatie vast te leggen.',
+  activeDeviceLabel: 'Huidige apparaatweergave',
+  badgeDeviceEmulation: '3x APPARAAT-EMULATIE',
+  deviceZipDownloaded: 'Apparaatpakket succesvol gedownload!',
 };

@@ -127,4 +127,19 @@ export const ko: TranslationType = {
   paginationOf: '/',
   paginationLinks: '개 링크',
   paginationHeadings: '개 제목',
+
+  // Device-specific translations
+  downloadDesktopZip: '데스크톱 버전 다운로드 (ZIP)',
+  downloadTabletZip: '태블릿 버전 다운로드 (ZIP)',
+  downloadMobileZip: '모바일 버전 다운로드 (ZIP)',
+  downloadAllDevicesZip: '3가지 버전 일괄 다운로드 (완전 패키지)',
+  deviceDesktop: '데스크톱',
+  deviceTablet: '태블릿',
+  deviceMobile: '모바일',
+  deviceAll: '3개 기기 전체',
+  deviceVersionTitle: '3가지 기기 버전 제공',
+  deviceVersionDesc: '데스크톱, 태블릿, 모바일 브라우저의 정밀한 에뮬레이션을 통해 반응형 레이아웃, 미디어 및 내비게이션을 충실히 캡처했습니다.',
+  activeDeviceLabel: '현재 기기 뷰',
+  badgeDeviceEmulation: '3x 기기 에뮬레이션',
+  deviceZipDownloaded: '기기 패키지가 성공적으로 다운로드되었습니다!',
 };

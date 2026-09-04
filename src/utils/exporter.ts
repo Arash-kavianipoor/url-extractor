@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { ExtractedFile, ScrapedLink, ScrapedHeading, HeadingLevel, CrawlMode, DeviceType, DeviceVersion } from '../types.js';
+import { OFFLINE_GUIDES } from '../i18n/offlineGuides.js';
 
 export function formatBytes(bytes: number, decimals = 2): string {
   if (!bytes || bytes === 0) return '0 B';

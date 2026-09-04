@@ -127,4 +127,19 @@ export const bn: TranslationType = {
   paginationOf: 'মোট',
   paginationLinks: 'লিঙ্ক',
   paginationHeadings: 'শিরোনাম',
+
+  // Device-specific translations
+  downloadDesktopZip: 'ডেস্কটপ সংস্করণ ডাউনলোড করুন (ZIP)',
+  downloadTabletZip: 'ট্যাবলেট সংস্করণ ডাউনলোড করুন (ZIP)',
+  downloadMobileZip: 'মোবাইল সংস্করণ ডাউনলোড করুন (ZIP)',
+  downloadAllDevicesZip: '৩টি সংস্করণই ডাউনলোড করুন (সম্পূর্ণ বান্ডিল)',
+  deviceDesktop: 'ডেস্কটপ',
+  deviceTablet: 'ট্যাবলেট',
+  deviceMobile: 'মোবাইল',
+  deviceAll: 'সব ৩টি ডিভাইস',
+  deviceVersionTitle: '৩টি ডিভাইস সংস্করণ উপলব্ধ',
+  deviceVersionDesc: 'প্রকৃত ডেস্কটপ, ট্যাবলেট এবং মোবাইল ব্রাউজার এমুলেশন সহ প্রতিক্রিয়াশীল লেআউট, মিডিয়া এবং নেভিগেশন সংগ্রহ করা হয়েছে।',
+  activeDeviceLabel: 'বর্তমান ডিভাইস ভিউ',
+  badgeDeviceEmulation: '৩x ডিভাইস এমুলেশন',
+  deviceZipDownloaded: 'ডিভাইস প্যাকেজ সফলভাবে ডাউনলোড করা হয়েছে!',
 };

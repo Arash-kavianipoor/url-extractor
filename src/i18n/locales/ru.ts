@@ -127,4 +127,19 @@ export const ru: TranslationType = {
   paginationOf: 'из',
   paginationLinks: 'ссылок',
   paginationHeadings: 'заголовков',
+
+  // Device-specific translations
+  downloadDesktopZip: 'Скачать версию для ПК (ZIP)',
+  downloadTabletZip: 'Скачать версию для планшета (ZIP)',
+  downloadMobileZip: 'Скачать версию для мобильного (ZIP)',
+  downloadAllDevicesZip: 'Скачать все 3 версии (Полный пакет)',
+  deviceDesktop: 'Компьютер',
+  deviceTablet: 'Планшет',
+  deviceMobile: 'Мобильный',
+  deviceAll: 'Все 3 устройства',
+  deviceVersionTitle: 'Доступно 3 версии для устройств',
+  deviceVersionDesc: 'Собрано с достоверной эмуляцией браузеров ПК, планшетов и смартфонов для сохранения адаптивной верстки, медиа и навигации.',
+  activeDeviceLabel: 'Текущий вид устройства',
+  badgeDeviceEmulation: '3x ЭМУЛЯЦИЯ УСТРОЙСТВ',
+  deviceZipDownloaded: 'Пакет устройства успешно скачан!',
 };

@@ -127,4 +127,19 @@ export const hi: TranslationType = {
   paginationOf: 'कुल',
   paginationLinks: 'लिंक',
   paginationHeadings: 'शीर्षक',
+
+  // Device-specific translations
+  downloadDesktopZip: 'डेस्कटॉप संस्करण डाउनलोड करें (ZIP)',
+  downloadTabletZip: 'टैबलेट संस्करण डाउनलोड करें (ZIP)',
+  downloadMobileZip: 'मोबाइल संस्करण डाउनलोड करें (ZIP)',
+  downloadAllDevicesZip: 'तीनों संस्करण डाउनलोड करें (पूर्ण बंडल)',
+  deviceDesktop: 'डेस्कटॉप',
+  deviceTablet: 'टैबलेट',
+  deviceMobile: 'मोबाइल',
+  deviceAll: 'तीनों डिवाइस',
+  deviceVersionTitle: '3 डिवाइस संस्करण उपलब्ध',
+  deviceVersionDesc: 'उत्तरदायी लेआउट, मीडिया और नेविगेशन कैप्चर करने के लिए प्रामाणिक डेस्कटॉप, टैबलेट और मोबाइल ब्राउज़र एमुलेशन के साथ प्राप्त किया गया।',
+  activeDeviceLabel: 'वर्तमान डिवाइस दृश्य',
+  badgeDeviceEmulation: '3x डिवाइस एमुलेशन',
+  deviceZipDownloaded: 'डिवाइस पैकेज सफलतापूर्वक डाउनलोड हो गया!',
 };

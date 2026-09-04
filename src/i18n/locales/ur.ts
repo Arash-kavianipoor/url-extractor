@@ -127,4 +127,19 @@ export const ur: TranslationType = {
   paginationOf: 'کل',
   paginationLinks: 'روابط',
   paginationHeadings: 'عنوانات',
+
+  // Device-specific translations
+  downloadDesktopZip: 'ڈیسک ٹاپ ورژن ڈاؤن لوڈ کریں (ZIP)',
+  downloadTabletZip: 'ٹیبلٹ ورژن ڈاؤن لوڈ کریں (ZIP)',
+  downloadMobileZip: 'موبائل ورژن ڈاؤن لوڈ کریں (ZIP)',
+  downloadAllDevicesZip: 'تینوں ورژنز ڈاؤن لوڈ کریں (مکمل بنڈل)',
+  deviceDesktop: 'ڈیسک ٹاپ',
+  deviceTablet: 'ٹیبلٹ',
+  deviceMobile: 'موبائل',
+  deviceAll: 'تمام 3 ڈیوائسز',
+  deviceVersionTitle: '3 ڈیوائس ورژنز دستیاب ہیں',
+  deviceVersionDesc: 'ریسپانسو لے آؤٹس، میڈیا اور نیویگیشن کو حاصل کرنے کے لیے مستند ڈیسک ٹاپ، ٹیبلٹ اور موبائل براؤزر ایمولیشن کے ساتھ حاصل کیا گیا ہے۔',
+  activeDeviceLabel: 'موجودہ ڈیوائس ویو',
+  badgeDeviceEmulation: '3x ڈیوائس ایمولیشن',
+  deviceZipDownloaded: 'ڈیوائس پیکیج کامیابی کے ساتھ ڈاؤن لوڈ ہو گیا!',
 };

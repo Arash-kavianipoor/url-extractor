@@ -127,4 +127,19 @@ export const es: TranslationType = {
   paginationOf: 'de',
   paginationLinks: 'enlaces',
   paginationHeadings: 'encabezados',
+
+  // Device-specific translations
+  downloadDesktopZip: 'Descargar versión Escritorio (ZIP)',
+  downloadTabletZip: 'Descargar versión Tablet (ZIP)',
+  downloadMobileZip: 'Descargar versión Móvil (ZIP)',
+  downloadAllDevicesZip: 'Descargar las 3 Versiones (Paquete Completo)',
+  deviceDesktop: 'Escritorio',
+  deviceTablet: 'Tablet',
+  deviceMobile: 'Móvil',
+  deviceAll: 'Los 3 Dispositivos',
+  deviceVersionTitle: '3 Versiones de Dispositivo Disponibles',
+  deviceVersionDesc: 'Extraído con emulación auténtica de navegadores Desktop, Tablet y Móvil para capturar diseños adaptables, medios y navegación.',
+  activeDeviceLabel: 'Vista de Dispositivo Activa',
+  badgeDeviceEmulation: 'EMULACIÓN 3x DISPOSITIVOS',
+  deviceZipDownloaded: '¡Paquete del dispositivo descargado con éxito!',
 };

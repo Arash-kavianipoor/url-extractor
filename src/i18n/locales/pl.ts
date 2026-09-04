@@ -127,4 +127,19 @@ export const pl: TranslationType = {
   paginationOf: 'z',
   paginationLinks: 'linków',
   paginationHeadings: 'nagłówków',
+
+  // Device-specific translations
+  downloadDesktopZip: 'Pobierz wersję Komputer (ZIP)',
+  downloadTabletZip: 'Pobierz wersję Tablet (ZIP)',
+  downloadMobileZip: 'Pobierz wersję Telefon (ZIP)',
+  downloadAllDevicesZip: 'Pobierz wszystkie 3 wersje (Pełny pakiet)',
+  deviceDesktop: 'Komputer',
+  deviceTablet: 'Tablet',
+  deviceMobile: 'Smartfon',
+  deviceAll: 'Wszystkie 3 urządzenia',
+  deviceVersionTitle: 'Dostępne 3 wersje urządzeń',
+  deviceVersionDesc: 'Pobrano z autentyczną emulacją przeglądarek komputerowych, tabletów i telefonów w celu zachowania układów responsywnych, multimediów i nawigacji.',
+  activeDeviceLabel: 'Bieżący widok urządzenia',
+  badgeDeviceEmulation: '3x EMULACJA URZĄDZEŃ',
+  deviceZipDownloaded: 'Pakiet urządzenia został pomyślnie pobrany!',
 };

@@ -127,4 +127,19 @@ export const id: TranslationType = {
   paginationOf: 'dari',
   paginationLinks: 'tautan',
   paginationHeadings: 'judul',
+
+  // Device-specific translations
+  downloadDesktopZip: 'Unduh versi Desktop (ZIP)',
+  downloadTabletZip: 'Unduh versi Tablet (ZIP)',
+  downloadMobileZip: 'Unduh versi Seluler (ZIP)',
+  downloadAllDevicesZip: 'Unduh Semua 3 Versi (Paket Lengkap)',
+  deviceDesktop: 'Desktop',
+  deviceTablet: 'Tablet',
+  deviceMobile: 'Seluler',
+  deviceAll: 'Ketiga Perangkat',
+  deviceVersionTitle: 'Tersedia 3 Versi Perangkat',
+  deviceVersionDesc: 'Diambil dengan emulasi peramban Desktop, Tablet, dan Ponsel yang autentik untuk menangkap tata letak responsif, media, dan navigasi.',
+  activeDeviceLabel: 'Tampilan Perangkat Saat Ini',
+  badgeDeviceEmulation: 'EMULASI 3x PERANGKAT',
+  deviceZipDownloaded: 'Paket perangkat berhasil diunduh!',
 };

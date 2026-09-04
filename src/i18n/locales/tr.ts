@@ -127,4 +127,19 @@ export const tr: TranslationType = {
   paginationOf: '/',
   paginationLinks: 'bağlantı',
   paginationHeadings: 'başlık',
+
+  // Device-specific translations
+  downloadDesktopZip: 'Masaüstü Sürümünü İndir (ZIP)',
+  downloadTabletZip: 'Tablet Sürümünü İndir (ZIP)',
+  downloadMobileZip: 'Mobil Sürümünü İndir (ZIP)',
+  downloadAllDevicesZip: '3 Sürümü Birden İndir (Tam Paket)',
+  deviceDesktop: 'Masaüstü',
+  deviceTablet: 'Tablet',
+  deviceMobile: 'Mobil',
+  deviceAll: '3 Cihazın Tümü',
+  deviceVersionTitle: '3 Cihaz Sürümü Mevcut',
+  deviceVersionDesc: 'Duyarlı düzenleri, medyayı ve navigasyonu yakalamak için gerçek Masaüstü, Tablet ve Mobil tarayıcı emülasyonu ile getirildi.',
+  activeDeviceLabel: 'Mevcut Cihaz Görünümü',
+  badgeDeviceEmulation: '3x CİHAZ EMÜLASYONU',
+  deviceZipDownloaded: 'Cihaz paketi başarıyla indirildi!',
 };

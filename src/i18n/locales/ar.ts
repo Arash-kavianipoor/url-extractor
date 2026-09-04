@@ -137,4 +137,19 @@ export const ar: TranslationType = {
   paginationOf: 'من',
   paginationLinks: 'روابط',
   paginationHeadings: 'عناوين',
+
+  // Device-specific translations
+  downloadDesktopZip: 'تنزيل نسخة سطح المكتب (ZIP)',
+  downloadTabletZip: 'تنزيل نسخة الجهاز اللوحي (ZIP)',
+  downloadMobileZip: 'تنزيل نسخة الهاتف المحمول (ZIP)',
+  downloadAllDevicesZip: 'تنزيل جميع الإصدارات الثلاثة (حزمة شاملة)',
+  deviceDesktop: 'سطح المكتب',
+  deviceTablet: 'الجهاز اللوحي',
+  deviceMobile: 'الجوال',
+  deviceAll: 'جميع الأجهزة الثلاثة',
+  deviceVersionTitle: '3 إصدارات متوفرة للأجهزة',
+  deviceVersionDesc: 'تم الجلب بمحاكاة متصفح سطح المكتب واللوحي والهاتف المحمول لالتقاط التصاميم التفاعلية والوسائط.',
+  activeDeviceLabel: 'عرض الجهاز الحالي',
+  badgeDeviceEmulation: 'محاكاة 3 أجهزة متصفح',
+  deviceZipDownloaded: 'تم تنزيل حزمة الجهاز بنجاح!',
 };
