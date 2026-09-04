@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { ExtractedFile, Language, CrawlMode } from '../types.js';
 import { translations } from '../i18n.js';
-import { formatBytes, downloadFile, downloadZip } from '../utils/exporter.js';
+import { formatBytes, downloadFile, downloadZip, downloadSingleFileStandalone } from '../utils/exporter.js';
 
 interface CodeEditorProps {
   files: ExtractedFile[];
@@ -208,6 +208,23 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
           {/* Download ZIP and Export Options */}
           <div className="flex items-center gap-2 flex-wrap shrink-0">
+            <button
+              id="download-standalone-html-btn"
+              onClick={() => {
+                const ok = downloadSingleFileStandalone(files, 'website', 'desktop');
+                if (ok) {
+                  showToast('دانلود تک‌فایل ۱۰۰٪ آفلاین (.html) با موفقیت انجام شد');
+                } else {
+                  showToast('فایل آفلاین مستقل یافت نشد');
+                }
+              }}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-indigo-200 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/40 active:scale-[0.99] transition shadow-md cursor-pointer"
+              title="دانلود فایل HTML تک و کاملاً خودکفا بدون نیاز به اینترنت"
+            >
+              <Download className="w-4 h-4 text-indigo-400" />
+              <span>تک‌فایل آفلاین (.html)</span>
+            </button>
+
             <button
               id="download-zip-btn"
               onClick={handleDownloadAllZip}

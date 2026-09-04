@@ -1,6 +1,6 @@
 {
-  "name": "Web Scraper",
-  "description": "Extract structured data, test CSS selectors, inspect page elements, and generate scraper code from any website.",
+  "name": "Web Offline Exporter",
+  "description": "Export, bundle, and audit web pages and web assets for completely standalone, offline viewing and archiving.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

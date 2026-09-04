@@ -1,24 +1,24 @@
 export type Language =
-  | 'en' // English
-  | 'fa' // Persian (فارسی)
-  | 'es' // Spanish (Español)
-  | 'zh' // Chinese (简体中文)
-  | 'ar' // Arabic (العربية)
-  | 'hi' // Hindi (हिन्दी)
-  | 'fr' // French (Français)
-  | 'de' // German (Deutsch)
-  | 'ru' // Russian (Русский)
-  | 'pt' // Portuguese (Português)
-  | 'ja' // Japanese (日本語)
-  | 'ko' // Korean (한국어)
-  | 'it' // Italian (Italiano)
-  | 'tr' // Turkish (Türkçe)
-  | 'nl' // Dutch (Nederlands)
-  | 'pl' // Polish (Polski)
-  | 'id' // Indonesian (Bahasa Indonesia)
-  | 'vi' // Vietnamese (Tiếng Việt)
-  | 'ur' // Urdu (اردو)
-  | 'bn'; // Bengali (বাংলা)
+  | 'en'
+  | 'fa'
+  | 'ar'
+  | 'es'
+  | 'zh'
+  | 'fr'
+  | 'de'
+  | 'ru'
+  | 'pt'
+  | 'ja'
+  | 'hi'
+  | 'it'
+  | 'tr'
+  | 'ko'
+  | 'nl'
+  | 'pl'
+  | 'id'
+  | 'vi'
+  | 'ur'
+  | 'bn';
 
 export interface LanguageInfo {
   code: Language;
@@ -31,9 +31,22 @@ export interface LanguageInfo {
 
 export type CrawlMode = 'single' | 'all';
 
-export type LinkType = 'internal' | 'external' | 'asset' | 'anchor' | 'mailto' | 'other';
+export type DeviceType = 'desktop' | 'tablet' | 'mobile';
 
 export type HeadingLevel = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+
+export type LinkType = 'internal' | 'external' | 'asset' | 'anchor' | 'mailto' | 'other';
+
+export interface ScrapedLink {
+  id: string;
+  url: string;
+  text: string;
+  type: LinkType;
+  sourceUrl: string;
+  pageTitle?: string;
+  devices?: DeviceType[];
+  isVisible?: boolean;
+}
 
 export interface ScrapedHeading {
   id: string;
@@ -45,16 +58,15 @@ export interface ScrapedHeading {
   devices?: DeviceType[];
 }
 
-export interface ScrapedLink {
+export interface ExtractedFile {
   id: string;
-  url: string;
-  text: string;
-  type: LinkType;
-  sourceUrl: string;
-  devices?: DeviceType[];
+  name: string;
+  type: 'html' | 'css' | 'js' | 'javascript' | 'json' | 'image' | 'asset' | 'csv' | 'other';
+  content: string;
+  size: number;
+  sourceUrl?: string;
+  description?: string;
 }
-
-export type DeviceType = 'desktop' | 'tablet' | 'mobile';
 
 export interface DeviceProfileInfo {
   name: string;
@@ -63,7 +75,7 @@ export interface DeviceProfileInfo {
   secChUa: string;
   secChUaMobile: string;
   secChUaPlatform: string;
-  secChUaPlatformVersion?: string;
+  secChUaPlatformVersion: string;
   secChUaModel?: string;
   viewport: string;
   resolution: string;
@@ -79,14 +91,14 @@ export interface DeviceVersion {
   totalBytes: number;
   viewport: string;
   userAgent: string;
-  profileInfo?: DeviceProfileInfo;
-  links?: ScrapedLink[];
-  headings?: ScrapedHeading[];
-  headingsCount?: Record<HeadingLevel, number>;
-  totalLinksFound?: number;
-  internalLinksCount?: number;
-  externalLinksCount?: number;
-  uniqueLinksCount?: number;
+  profileInfo: DeviceProfileInfo;
+  links: ScrapedLink[];
+  headings: ScrapedHeading[];
+  headingsCount: Record<HeadingLevel, number>;
+  totalLinksFound: number;
+  internalLinksCount: number;
+  externalLinksCount: number;
+  uniqueLinksCount: number;
 }
 
 export interface DeviceComparison {
@@ -96,16 +108,6 @@ export interface DeviceComparison {
   uniqueLinksCount: Record<DeviceType, number>;
   commonLinksCount: number;
   differencesDetected: boolean;
-}
-
-export interface ExtractedFile {
-  id: string;
-  name: string;
-  type: 'html' | 'css' | 'javascript' | 'json';
-  content: string;
-  size: number;
-  sourceUrl?: string;
-  description?: string;
 }
 
 export interface ScrapeResult {
@@ -126,4 +128,52 @@ export interface ScrapeResult {
   deviceComparison?: DeviceComparison;
   scannedUrls: string[];
   executionTimeMs: number;
+}
+
+export type ExportFormat = 'single-html' | 'zip' | 'mhtml' | 'pwa-bundle';
+
+export interface WebAsset {
+  id: string;
+  name: string;
+  path: string;
+  mimeType: string;
+  dataUrl: string;
+  size: number;
+  isInlined: boolean;
+}
+
+export interface ExportOptions {
+  format: ExportFormat;
+  inlineCss: boolean;
+  inlineJs: boolean;
+  inlineImages: boolean;
+  stripTrackers: boolean;
+  injectOfflineBanner: boolean;
+  addServiceWorker: boolean;
+  enableReaderMode: boolean;
+  minify: boolean;
+  titleOverride: string;
+}
+
+export interface AuditIssue {
+  id: string;
+  type: 'error' | 'warning' | 'info';
+  category: 'network' | 'script' | 'style' | 'asset' | 'security';
+  title: string;
+  description: string;
+  elementSnippet?: string;
+  autoFixable: boolean;
+}
+
+export interface AuditReport {
+  score: number;
+  isOfflineReady: boolean;
+  totalExternalRequests: number;
+  totalAssetsCount: number;
+  totalEstimatedSize: number;
+  htmlSize: number;
+  cssSize: number;
+  jsSize: number;
+  imagesSize: number;
+  issues: AuditIssue[];
 }

@@ -24,7 +24,8 @@ import { LinksTable } from './components/LinksTable.js';
 import { CodeEditor } from './components/CodeEditor.js';
 import { LivePreview } from './components/LivePreview.js';
 import { FetchProgressBar } from './components/FetchProgressBar.js';
-import { downloadZip, downloadAllDevicesBundle } from './utils/exporter.js';
+import { ExtensionDownloadHero } from './components/ExtensionDownloadHero.js';
+import { downloadZip, downloadAllDevicesBundle, downloadSingleFileStandalone } from './utils/exporter.js';
 import { updateDocumentSeo } from './seo/seoManager.js';
 import { SEO_LANGUAGES } from './seo/seoConfig.js';
 
@@ -69,6 +70,7 @@ export default function App() {
   const [originalFiles, setOriginalFiles] = useState<ExtractedFile[]>([]);
   const [activeTab, setActiveTab] = useState<'links' | 'headings' | 'editor' | 'preview'>('links');
   const [isZippingAll, setIsZippingAll] = useState<boolean>(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState<boolean>(false);
 
   const t = translations[language];
   const isRtl = isRtlLanguage(language);
@@ -116,6 +118,7 @@ export default function App() {
 
   const handleScrape = async (url: string, mode: CrawlMode, maxPages: number) => {
     setIsLoading(true);
+    setIsPreviewOpen(true);
     setActiveScrapeUrl(url);
     setActiveScrapeMode(mode);
     setErrorMessage(null);
@@ -209,6 +212,15 @@ export default function App() {
     }
   };
 
+  const handleDownloadStandaloneHtml = () => {
+    if (!result) return;
+    const devFiles = result.deviceVersions?.[selectedDevice]?.files || editedFiles;
+    const ok = downloadSingleFileStandalone(devFiles, result.domain || 'website', selectedDevice);
+    if (!ok) {
+      alert('فایل تک‌فایل مستقل آفلاین یافت نشد.');
+    }
+  };
+
   const handleGlobalZipDownload = async () => {
     if (!result) return;
     try {
@@ -244,13 +256,23 @@ export default function App() {
       />
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-        {/* Scraper Input Panel */}
-        <ScraperForm
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
+        {/* Dedicated Browser Extension Download Hub & Installation Guide */}
+        <ExtensionDownloadHero
           language={language}
-          onScrape={handleScrape}
-          isLoading={isLoading}
+          onLaunchPreview={() => setIsPreviewOpen((prev) => !prev)}
+          isPreviewOpen={isPreviewOpen || isLoading || !!result}
         />
+
+        {/* In-Browser Extension Workspace / Live Simulator */}
+        {(isPreviewOpen || isLoading || !!result) && (
+          <div className="space-y-6 pt-4 border-t border-slate-800">
+            {/* Scraper Input Panel */}
+            <ScraperForm
+              language={language}
+              onScrape={handleScrape}
+              isLoading={isLoading}
+            />
 
         {/* Live Fetching Progress Bar */}
         <FetchProgressBar
@@ -335,6 +357,16 @@ export default function App() {
                 >
                   <Smartphone className="w-3.5 h-3.5 text-rose-400" />
                   <span>{t.downloadMobileZip}</span>
+                </button>
+
+                <button
+                  id="btn-download-standalone-html"
+                  onClick={handleDownloadStandaloneHtml}
+                  className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-500 active:scale-[0.98] border border-indigo-400/40 transition cursor-pointer shadow-md shadow-indigo-950/40"
+                  title="دانلود مستقیم تک‌فایل ۱۰۰٪ آفلاین و خودکفا (.html) بدون نیاز به اینترنت"
+                >
+                  <Download className="w-3.5 h-3.5 text-indigo-200" />
+                  <span>تک‌فایل مستقل آفلاین (.html)</span>
                 </button>
 
                 <button
@@ -542,6 +574,8 @@ export default function App() {
                 </p>
               </div>
             </div>
+          </div>
+        )}
           </div>
         )}
       </main>

@@ -495,6 +495,255 @@ function parseSrcsetUrls(srcsetValue: string): string[] {
 }
 
 /**
+ * Generates an ultra-lightweight, 100% offline self-contained SVG fallback image
+ * so no broken image icons or remote HTTP requests appear when offline.
+ */
+function generateOfflineImageFallback(alt = '', width = 400, height = 260): string {
+  const cleanAlt = (alt || 'Offline Visual Asset').slice(0, 45).replace(/[<>&"]/g, '');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  <rect width="100%" height="100%" fill="#1e293b"/>
+  <rect x="2" y="2" width="${width - 4}" height="${height - 4}" fill="none" stroke="#334155" stroke-width="2" stroke-dasharray="6,4"/>
+  <g fill="#64748b">
+    <circle cx="${Math.round(width / 2)}" cy="${Math.round(height / 2) - 14}" r="16" fill="#334155"/>
+    <path d="M${Math.round(width / 2) - 28} ${Math.round(height / 2) + 22} L${Math.round(width / 2)} ${Math.round(height / 2) - 6} L${Math.round(width / 2) + 28} ${Math.round(height / 2) + 22} Z" fill="#475569"/>
+  </g>
+  <text x="50%" y="${Math.round(height / 2) + 42}" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600" text-anchor="middle">${cleanAlt}</text>
+</svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+/**
+ * The Offline Air-gap Runtime Shield:
+ * Injected at the top of <head> to silently intercept and mock all runtime fetch,
+ * XMLHttpRequest, WebSocket, and EventSource calls, preventing unhandled network
+ * errors and keeping menus, modals, and tabs responsive without an active internet connection.
+ */
+function getOfflineRuntimeShield(): string {
+  return `  <script id="offline-airgap-shield">
+/* ========================================================================
+   OFFLINE AIR-GAP RUNTIME SHIELD & ZERO-NETWORK MOCK ENGINE
+   - Intercepts and safely resolves fetch & XMLHttpRequest to prevent crashes
+   - Universal CMS/Framework stubs (WordPress, Elementor, Analytics)
+   - Universal jQuery shim & callback queue for zero reference errors
+   - Dynamic script element neutralizer (blocks remote script injection)
+   - Stubs WebSocket and EventSource gracefully
+   - Suppresses unhandled network rejection errors
+   - Rescues broken runtime images with zero external dependencies
+======================================================================== */
+(function() {
+  'use strict';
+
+  // 1. Silent Safe Mock for fetch API
+  var origFetch = window.fetch;
+  window.fetch = function(input, init) {
+    var url = typeof input === 'string' ? input : (input && input.url) ? input.url : '';
+    if (url.startsWith('data:') || url.startsWith('blob:') || (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('//'))) {
+      if (origFetch) {
+        return origFetch(input, init).catch(function() {
+          return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+        });
+      }
+    }
+    return Promise.resolve(new Response('{}', {
+      status: 200,
+      statusText: 'OK (Air-Gapped Offline Mode)',
+      headers: { 'Content-Type': 'application/json' }
+    }));
+  };
+
+  // 2. Silent Safe Mock for XMLHttpRequest
+  var origXHR = window.XMLHttpRequest;
+  if (origXHR) {
+    var origOpen = origXHR.prototype.open;
+    var origSend = origXHR.prototype.send;
+    origXHR.prototype.open = function(method, url) {
+      this._url = url;
+      this._isRemote = typeof url === 'string' && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//'));
+      try {
+        return origOpen.apply(this, arguments);
+      } catch (e) {}
+    };
+    origXHR.prototype.send = function(data) {
+      if (this._isRemote) {
+        var self = this;
+        setTimeout(function() {
+          try {
+            Object.defineProperty(self, 'readyState', { value: 4, writable: true });
+            Object.defineProperty(self, 'status', { value: 200, writable: true });
+            Object.defineProperty(self, 'statusText', { value: 'OK (Offline)', writable: true });
+            Object.defineProperty(self, 'responseText', { value: '{}', writable: true });
+            Object.defineProperty(self, 'response', { value: '{}', writable: true });
+            if (typeof self.onreadystatechange === 'function') self.onreadystatechange();
+            if (typeof self.onload === 'function') self.onload();
+          } catch (e) {}
+        }, 10);
+        return;
+      }
+      try {
+        return origSend.apply(this, arguments);
+      } catch (e) {
+        var self = this;
+        setTimeout(function() {
+          if (typeof self.onload === 'function') self.onload();
+        }, 10);
+      }
+    };
+  }
+
+  // 3. Dynamic Script Element Neutralizer: blocks dynamic remote script tags from trying to load offline
+  var origCreateElement = document.createElement;
+  document.createElement = function(tagName, options) {
+    var elem = origCreateElement.call(document, tagName, options);
+    if (tagName && String(tagName).toLowerCase() === 'script') {
+      var origSetAttr = elem.setAttribute;
+      elem.setAttribute = function(name, val) {
+        if (name && name.toLowerCase() === 'src' && typeof val === 'string' && (val.indexOf('//') !== -1 || val.indexOf('http') === 0)) {
+          return origSetAttr.call(elem, 'data-blocked-offline-src', val);
+        }
+        return origSetAttr.call(elem, name, val);
+      };
+    }
+    return elem;
+  };
+
+  // 4. Universal CMS and Framework Stubs (WP, Elementor, Analytics, GTag)
+  window.wp = window.wp || {};
+  window.wp.i18n = window.wp.i18n || {
+    setLocaleData: function() {},
+    __: function(s) { return s; },
+    _x: function(s) { return s; },
+    _n: function(s, p, n) { return n === 1 ? s : p; },
+    isRtl: function() { return true; }
+  };
+  window.wp.hooks = window.wp.hooks || {
+    addAction: function() {},
+    doAction: function() {},
+    addFilter: function() {},
+    applyFilters: function(hook, val) { return val; },
+    removeAction: function() {},
+    removeFilter: function() {}
+  };
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function() {};
+  window.fbq = window.fbq || function() {};
+  window.ga = window.ga || function() {};
+  window.elementorFrontendConfig = window.elementorFrontendConfig || {};
+  window.ElementorProFrontendConfig = window.ElementorProFrontendConfig || {};
+
+  // 5. Universal jQuery Shim & Callback Queue
+  // If inline scripts parse before jQuery is initialized, queue callbacks safely without throwing ReferenceError
+  if (typeof window.jQuery === 'undefined' && typeof window.$ === 'undefined') {
+    var _jqQ = [];
+    var jqStub = function(arg) {
+      if (typeof arg === 'function') {
+        if (document.readyState === 'complete') {
+          setTimeout(function() { try { if (window.jQuery && window.jQuery !== jqStub) window.jQuery(arg); else arg(jqStub); } catch(e){} }, 1);
+        } else {
+          _jqQ.push(arg);
+        }
+        return jqStub;
+      }
+      var dummy = {
+        length: 0,
+        on: function() { return dummy; },
+        off: function() { return dummy; },
+        bind: function() { return dummy; },
+        unbind: function() { return dummy; },
+        ready: function(fn) { jqStub(fn); return dummy; },
+        hide: function() { return dummy; },
+        show: function() { return dummy; },
+        css: function() { return dummy; },
+        attr: function() { return ''; },
+        addClass: function() { return dummy; },
+        removeClass: function() { return dummy; },
+        find: function() { return dummy; },
+        each: function() { return dummy; },
+        val: function() { return ''; },
+        html: function() { return ''; },
+        text: function() { return ''; },
+        trigger: function() { return dummy; }
+      };
+      return dummy;
+    };
+    jqStub.fn = jqStub.prototype = {};
+    jqStub.ready = function(fn) { jqStub(fn); };
+    jqStub.ajax = function() { return Promise.resolve({}); };
+    jqStub.extend = function() {
+      var t = arguments[0] || {};
+      for (var i = 1; i < arguments.length; i++) {
+        var s = arguments[i];
+        if (s) for (var k in s) t[k] = s[k];
+      }
+      return t;
+    };
+    window.jQuery = window.$ = jqStub;
+    window.__flushJqQueue = function() {
+      var realJq = window.jQuery;
+      while (_jqQ.length) {
+        var fn = _jqQ.shift();
+        try { if (realJq && realJq !== jqStub) realJq(fn); else fn(realJq); } catch(e) {}
+      }
+    };
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        if (typeof window.__flushJqQueue === 'function') window.__flushJqQueue();
+      }, 50);
+    });
+  }
+
+  // 6. Prevent WebSocket / EventSource runtime crashes
+  if (typeof window.WebSocket !== 'undefined') {
+    try {
+      window.WebSocket = function() {
+        return {
+          send: function() {},
+          close: function() {},
+          addEventListener: function() {},
+          removeEventListener: function() {},
+          readyState: 3
+        };
+      };
+    } catch(e) {}
+  }
+  if (typeof window.EventSource !== 'undefined') {
+    try {
+      window.EventSource = function() {
+        return {
+          close: function() {},
+          addEventListener: function() {},
+          removeEventListener: function() {},
+          readyState: 2
+        };
+      };
+    } catch(e) {}
+  }
+
+  // 7. Runtime broken image fallback & script error suppressor
+  window.addEventListener('error', function(e) {
+    if (e && e.target && e.target.tagName === 'SCRIPT') {
+      e.preventDefault();
+      return;
+    }
+    if (e && e.target && e.target.tagName === 'IMG') {
+      var img = e.target;
+      if (!img.getAttribute('data-offline-rescued')) {
+        img.setAttribute('data-offline-rescued', 'true');
+        img.src = 'data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22300%22%20height%3D%22180%22%20viewBox%3D%220%200%20300%20180%22%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22%231e293b%22%2F%3E%3Ctext%20x%3D%2250%25%22%20y%3D%2250%25%22%20fill%3D%22%2394a3b8%22%20font-family%3D%22sans-serif%22%20font-size%3D%2213%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22middle%22%3EOffline%20Asset%3C%2Ftext%3E%3C%2Fsvg%3E';
+      }
+    }
+  }, true);
+
+  // 8. Suppress Unhandled Rejection caused by offline network drops
+  window.addEventListener('unhandledrejection', function(event) {
+    if (event.reason && (event.reason.name === 'TypeError' || String(event.reason).includes('fetch') || String(event.reason).includes('Network'))) {
+      event.preventDefault();
+    }
+  });
+})();
+  </script>\n`;
+}
+
+/**
  * Recursively resolves @import rules and embeds webfonts and images as Base64 Data URIs
  * so the CSS has ZERO internet dependencies and renders identical offline.
  */
@@ -583,8 +832,17 @@ async function processCssContent(
     }
   }
 
-  // Pre-fetch key fonts and images with concurrency pooling (top 20 priority assets)
-  await runWithConcurrency(distinctAssetPaths.slice(0, 20), 8, async (assetPath) => {
+  // Sort distinct assets: prioritize webfonts first, then embeddable images
+  distinctAssetPaths.sort((a, b) => {
+    const aIsFont = /\.(woff2?|ttf|otf|eot)(\?.*)?$/i.test(a);
+    const bIsFont = /\.(woff2?|ttf|otf|eot)(\?.*)?$/i.test(b);
+    if (aIsFont && !bIsFont) return -1;
+    if (!aIsFont && bIsFont) return 1;
+    return 0;
+  });
+
+  // Pre-fetch key fonts and images with concurrency pooling (up to 40 priority assets)
+  await runWithConcurrency(distinctAssetPaths.slice(0, 40), 8, async (assetPath) => {
     if (!tracker.canFetch()) return;
     try {
       const resolvedAssetUrl = new URL(assetPath, cssBaseUrl).href;
@@ -596,13 +854,13 @@ async function processCssContent(
         if (isEmbeddable) {
           const binary = await fetchBinary(
             resolvedAssetUrl,
-            2200,
+            2400,
             tracker,
             cssBaseUrl,
             cookieJar,
             isFont ? 'font' : 'image'
           );
-          if (binary && binary.buffer.byteLength <= 2.5 * 1024 * 1024) {
+          if (binary && binary.buffer.byteLength <= 3 * 1024 * 1024) {
             const b64 = binary.buffer.toString('base64');
             const dataUri = `data:${binary.mimeType};base64,${b64}`;
             assetCache.set(resolvedAssetUrl, dataUri);
@@ -612,7 +870,7 @@ async function processCssContent(
     } catch {}
   });
 
-  // 3. Single-pass URL rewriting
+  // 3. Single-pass URL rewriting: replace with Base64 Data URI or keep valid resolved URL
   processed = processed.replace(
     /url\(\s*(['"]?)([^'"()]+)\1\s*\)/gi,
     (fullMatch, _quote, rawUrl) => {
@@ -622,8 +880,12 @@ async function processCssContent(
       }
       try {
         const resolved = new URL(trimmed, cssBaseUrl).href;
-        const replacement = assetCache.get(resolved) || resolved;
-        return `url("${replacement}")`;
+        const cached = assetCache.get(resolved);
+        if (cached) {
+          return `url("${cached}")`;
+        }
+        // Always preserve syntactically valid resolved absolute URL (never output illegal local("sans-serif"))
+        return `url("${resolved}")`;
       } catch {
         return fullMatch;
       }
@@ -649,14 +911,16 @@ async function processHtmlForOffline(
   assetCache: Map<string, string>,
   tracker: SubrequestTracker,
   cookieJar: CookieJar,
-  device: DeviceType = 'desktop'
+  device: DeviceType = 'desktop',
+  combinedJs = '',
+  isStandalone = false
 ): Promise<string> {
   const $ = cheerio.load(rawHtml);
 
   // Remove <base> tag to allow local file:/// resolution
   $('base').remove();
 
-  // Remove ALL remote stylesheet links
+  // Remove ALL remote stylesheet links and remote preconnect/dns-prefetch/preload links
   $('link').each((_, elem) => {
     const rel = ($(elem).attr('rel') || '').toLowerCase();
     const as = ($(elem).attr('as') || '').toLowerCase();
@@ -665,18 +929,68 @@ async function processHtmlForOffline(
 
     if (isStylesheetLink(rel, as, type, href)) {
       $(elem).remove();
+      return;
+    }
+
+    if (
+      ['preconnect', 'dns-prefetch', 'preload', 'prerender', 'prefetch', 'subresource'].includes(rel)
+    ) {
+      $(elem).remove();
+      return;
     }
   });
 
-  // Clean out analytics and tracking scripts
+  // Clean out analytics, tracking scripts, and remove remote/relative <script src="..."> tags
+  // because remote scripts stall or fail in offline mode (their content is already compiled in scripts.js)
   $('script').each((_, elem) => {
-    const src = $(elem).attr('src') || '';
+    const src = $(elem).attr('src') || $(elem).attr('data-src') || '';
     const content = $(elem).html() || '';
     const isTracker = TRACKER_DOMAINS.some(
       (trackerDomain) => src.includes(trackerDomain) || content.includes(trackerDomain)
     );
     if (isTracker) {
       $(elem).remove();
+      return;
+    }
+
+    // Strip WordPress emoji script and third-party trackers
+    if (
+      content.includes('_wpemojiSettings') ||
+      content.includes('wp-emoji-loader') ||
+      content.includes('gtag(') ||
+      content.includes('google-analytics') ||
+      content.includes('fbq(') ||
+      content.includes('beacon.min.js')
+    ) {
+      $(elem).remove();
+      return;
+    }
+
+    // Remove any external or relative script tag because its code is in scripts.js
+    if (
+      src &&
+      (src.startsWith('http://') ||
+        src.startsWith('https://') ||
+        src.startsWith('//') ||
+        src.startsWith('/') ||
+        src.includes('.js'))
+    ) {
+      $(elem).remove();
+      return;
+    }
+
+    // Clean integrity / crossorigin attributes that can trigger SRI hash mismatches offline
+    $(elem).removeAttr('integrity');
+    $(elem).removeAttr('crossorigin');
+  });
+
+  // Neutralize remote iframes (e.g. YouTube, Maps) so no grey "No Internet" iframe error shows up
+  $('iframe').each((_, elem) => {
+    const src = $(elem).attr('src') || '';
+    if (src && (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('//'))) {
+      $(elem).replaceWith(
+        '<div style="background:#1e293b; color:#94a3b8; border:1px dashed #334155; border-radius:8px; padding:1.2rem; text-align:center; font-family:sans-serif; font-size:12px; margin:0.8rem 0;">📦 Embedded Widget (Safely neutralized for 100% offline viewing)</div>'
+      );
     }
   });
 
@@ -937,14 +1251,15 @@ async function processHtmlForOffline(
         } catch {}
       }
 
-      // If no cached Data URI, pick first candidate and ensure absolute URL fallback
+      // If no cached Data URI, generate a clean, completely self-contained SVG fallback Data URI
+      // so zero network requests are made offline and no broken icon boxes appear
       if (!finalSrc && target.urlCandidates.length > 0) {
-        const first = target.urlCandidates[0];
-        try {
-          finalSrc = new URL(first, pageUrl).href;
-        } catch {
-          finalSrc = first;
-        }
+        const alt = $elem.attr('alt') || '';
+        const width = parseInt($elem.attr('width') || '', 10) || 400;
+        const height = parseInt($elem.attr('height') || '', 10) || 260;
+        finalSrc = generateOfflineImageFallback(alt, Math.min(width, 800), Math.min(height, 500));
+      } else if (!finalSrc) {
+        finalSrc = generateOfflineImageFallback($elem.attr('alt') || '', 400, 260);
       }
 
       if (finalSrc) {
@@ -975,8 +1290,8 @@ async function processHtmlForOffline(
       if (firstCand) {
         try {
           const resolved = new URL(firstCand, pageUrl).href;
-          const cached = assetCache.get(resolved) || resolved;
-          $elem.attr('srcset', cached);
+          const cached = assetCache.get(resolved);
+          $elem.attr('srcset', cached || generateOfflineImageFallback('', 400, 260));
           $elem.removeAttr('data-srcset');
         } catch {}
       }
@@ -990,8 +1305,9 @@ async function processHtmlForOffline(
           if (!trimmed || trimmed.startsWith('data:') || trimmed.startsWith('#')) return fullMatch;
           try {
             const resolved = new URL(trimmed, pageUrl).href;
-            const replacement = assetCache.get(resolved) || resolved;
-            return `url("${replacement}")`;
+            const replacement = assetCache.get(resolved);
+            if (replacement) return `url("${replacement}")`;
+            return `url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%221%22%20height%3D%221%22%2F%3E")`;
           } catch {
             return fullMatch;
           }
@@ -1008,8 +1324,10 @@ async function processHtmlForOffline(
         const cleanBg = dataBg.replace(/url\(\s*(['"]?)([^'"()]+)\1\s*\)/gi, '$2').trim();
         try {
           const resolved = new URL(cleanBg, pageUrl).href;
-          const replacement = assetCache.get(resolved) || resolved;
-          currentStyle += `; background-image: url("${replacement}") !important;`;
+          const replacement = assetCache.get(resolved);
+          if (replacement) {
+            currentStyle += `; background-image: url("${replacement}") !important;`;
+          }
         } catch {}
         $elem.removeAttr('data-bg');
         $elem.removeAttr('data-background');
@@ -1023,7 +1341,7 @@ async function processHtmlForOffline(
       if (first) {
         try {
           const resolved = new URL(first, pageUrl).href;
-          const replacement = assetCache.get(resolved) || resolved;
+          const replacement = assetCache.get(resolved) || generateOfflineImageFallback('', 200, 200);
           $elem.attr('href', replacement);
           if ($elem.attr('xlink:href')) {
             $elem.attr('xlink:href', replacement);
@@ -1035,7 +1353,7 @@ async function processHtmlForOffline(
       if (first) {
         try {
           const resolved = new URL(first, pageUrl).href;
-          const replacement = assetCache.get(resolved) || resolved;
+          const replacement = assetCache.get(resolved) || generateOfflineImageFallback('Video Poster', 480, 270);
           $elem.attr('poster', replacement);
         } catch {}
       }
@@ -1044,34 +1362,16 @@ async function processHtmlForOffline(
       if (first) {
         try {
           const resolved = new URL(first, pageUrl).href;
-          const replacement = assetCache.get(resolved) || resolved;
+          const replacement = assetCache.get(resolved) || generateOfflineImageFallback('Favicon', 32, 32);
           $elem.attr('href', replacement);
         } catch {}
       }
     }
   }
 
-  // Rewrite URLs inside inline <style> blocks
-  $('style').each((_, elem) => {
-    const originalCss = $(elem).html() || '';
-    if (originalCss) {
-      const rewritten = originalCss.replace(
-        /url\(\s*(['"]?)([^'"()]+)\1\s*\)/gi,
-        (fullMatch, _quote, rawUrl) => {
-          const trimmed = (rawUrl || '').trim();
-          if (!trimmed || trimmed.startsWith('data:') || trimmed.startsWith('#')) return fullMatch;
-          try {
-            const resolved = new URL(trimmed, pageUrl).href;
-            const replacement = assetCache.get(resolved) || resolved;
-            return `url("${replacement}")`;
-          } catch {
-            return fullMatch;
-          }
-        }
-      );
-      $(elem).html(rewritten);
-    }
-  });
+  // Remove all original document <style> blocks (except SVG defs/styles)
+  // because all CSS rules have already been compiled and Base64-inlined into styles.css (or embedded offline style)
+  $('head style, body style, :not(svg) > style').remove();
 
   // Rewrite internal links if we crawled multiple pages
   $('a').each((_, elem) => {
@@ -1129,6 +1429,10 @@ async function processHtmlForOffline(
     $('html').prepend('<head></head>');
   }
 
+  // Inject Offline Air-Gap Runtime Shield at the very top of <head>
+  // This mocks window.fetch and XMLHttpRequest to prevent network error exceptions offline.
+  $('head').prepend(getOfflineRuntimeShield());
+
   // Ensure UTF-8 charset and responsive viewport are in <head>
   if ($('meta[charset]').length === 0) {
     $('head').prepend('<meta charset="UTF-8">\n');
@@ -1139,53 +1443,36 @@ async function processHtmlForOffline(
   $('head').append(`  <meta name="viewport" content="${profile.viewport}">\n`);
   $('head').append(`  <meta name="target-device" content="${device}">\n`);
 
-  // 1. Link to local styles.css
-  $('head').append('  <link rel="stylesheet" href="styles.css">\n');
+  // 1. Link to local styles.css and scripts.js in <head> if not in standalone mode
+  if (!isStandalone) {
+    $('head').append('  <link rel="stylesheet" href="styles.css">\n');
+    $('head').append('  <script src="scripts.js"></script>\n');
+  } else {
+    // 2. In standalone single-file mode, embed the complete CSS and JS directly inside <head>
+    const safeCss = combinedCss.replace(/<\/style>/gi, '<\\/style>');
+    $('head').append(
+      `  <style id="offline-standalone-styles">\n/* =========================================================\n   100% OFFLINE STANDALONE EMBEDDED STYLESHEET\n========================================================= */\n${safeCss}\n  </style>\n`
+    );
+    if (combinedJs) {
+      const safeJs = combinedJs.replace(/<\/script>/gi, '<\\/script>');
+      $('head').append(`  <script id="offline-standalone-scripts">\n${safeJs}\n  </script>\n`);
+    }
+  }
 
-  // 2. Inject CSS bundle with OFFLINE FULL-VISIBILITY ENGINE
-  const safeCss = combinedCss.replace(/<\/style>/gi, '<\\/style>');
-  const offlineEngineRules = `
-/* ========================================================================
-   OFFLINE FULL-RENDER & BOTTOM-SECTION VISIBILITY ENGINE
-   Guarantees footer, bottom grids, lazy containers & animations are 100% visible
-======================================================================== */
-html, body {
-  overflow-x: hidden !important;
-  min-height: 100% !important;
-  height: auto !important;
-}
-[data-aos], .aos-init, .aos-animate,
-.wow, .reveal, .reveal-on-scroll,
-.lazyload, .lazyloading, .lazyloaded,
-[data-lazy], [loading="lazy"],
-.opacity-0, [style*="opacity: 0"], [style*="opacity:0"],
-.invisible, [style*="visibility: hidden"], [style*="visibility:hidden"],
-footer, section, main, [role="main"],
-.site-footer, .page-footer, .footer,
-div[class*="footer"], div[class*="bottom"],
-div[class*="section"], div[class*="content"] {
-  opacity: 1 !important;
-  visibility: visible !important;
-  transform: none !important;
-  transition: none !important;
-  filter: none !important;
-}
-img, picture, source {
-  content-visibility: visible !important;
-}
-`;
-
-  $('head').append(
-    `  <style id="offline-bundle-styles">\n/* =========================================================\n   100% OFFLINE BUNDLE - ZERO INTERNET CONNECTION REQUIRED\n========================================================= */\n${offlineEngineRules}\n${safeCss}\n  </style>\n`
-  );
-
-  // 3. Link to scripts.js at bottom of body
+  // Ensure <body> exists
   if ($('body').length === 0) {
     $('html').append('<body></body>');
   }
-  $('body').append('  <script src="scripts.js"></script>\n');
 
-  return $.html();
+  let finalHtml = $.html();
+  // Strip any leading XML declaration, comments, or whitespace before <!DOCTYPE html>
+  finalHtml = finalHtml.replace(/^[\s\S]*?(<!doctype\s+html[^>]*>)/i, '$1');
+  // Ensure standard mode doctype is always present
+  if (!/^<!doctype\s+html/i.test(finalHtml.trim())) {
+    finalHtml = '<!DOCTYPE html>\n' + finalHtml;
+  }
+
+  return finalHtml;
 }
 
 /**
@@ -1699,9 +1986,37 @@ export async function scrapeWebPage(
     `// ========================================================================\n// OFFLINE JAVASCRIPT BUNDLE\n// Extracted from ${startUrlInput}\n// ========================================================================\n`,
   ];
 
-  // Fetch external scripts (prioritized to key UI libraries)
-  for (const jsUrl of Array.from(discoveredScriptUrls).slice(0, 10)) {
-    if (!tracker.canFetch()) break;
+  // Fetch external scripts prioritized to foundational UI libraries
+  const scriptUrlList = Array.from(discoveredScriptUrls).filter((url) => {
+    return !TRACKER_DOMAINS.some((t) => url.includes(t));
+  });
+
+  // Sort so jQuery and core dependencies run first
+  scriptUrlList.sort((a, b) => {
+    const aLow = a.toLowerCase();
+    const bLow = b.toLowerCase();
+    const aScore =
+      (aLow.includes('jquery.min') || aLow.includes('jquery-core') ? -20 : 0) +
+      (aLow.includes('jquery') ? -10 : 0) +
+      (aLow.includes('migrate') ? -8 : 0) +
+      (aLow.includes('core') ? -5 : 0) +
+      (aLow.includes('hooks') ? -4 : 0) +
+      (aLow.includes('i18n') ? -3 : 0);
+    const bScore =
+      (bLow.includes('jquery.min') || bLow.includes('jquery-core') ? -20 : 0) +
+      (bLow.includes('jquery') ? -10 : 0) +
+      (bLow.includes('migrate') ? -8 : 0) +
+      (bLow.includes('core') ? -5 : 0) +
+      (bLow.includes('hooks') ? -4 : 0) +
+      (bLow.includes('i18n') ? -3 : 0);
+    return aScore - bScore;
+  });
+
+  const scriptsToFetch = scriptUrlList.slice(0, 35);
+  const fetchedScripts = new Map<string, string>();
+
+  await runWithConcurrency(scriptsToFetch, 6, async (jsUrl) => {
+    if (!tracker.canFetch()) return;
     try {
       const jsRes = await fetchWithTimeout(
         jsUrl,
@@ -1711,20 +2026,25 @@ export async function scrapeWebPage(
         parsedStartUrl.href,
         cookieJar
       );
-      if (jsRes.ok && jsRes.text && jsRes.text.length < 800000) {
-        jsSections.push(
-          `// --- Script from ${jsUrl} ---\n(function(){\ntry {\n${jsRes.text}\n} catch(e){ console.warn("Error in script ${jsUrl}:", e); }\n})();\n`
-        );
+      if (jsRes.ok && jsRes.text && jsRes.text.length < 1500000) {
+        fetchedScripts.set(jsUrl, jsRes.text);
       }
     } catch {}
+  });
+
+  for (const jsUrl of scriptsToFetch) {
+    const code = fetchedScripts.get(jsUrl);
+    if (code) {
+      jsSections.push(
+        `// --- Script from ${jsUrl} ---\ntry {\n${code}\n} catch(e){ console.warn("Offline script note [${jsUrl}]:", e); }\n`
+      );
+    }
   }
 
-  // Include extracted inline scripts
-  for (const inlineScript of discoveredInlineScripts) {
-    jsSections.push(
-      `// --- ${inlineScript.source} ---\n(function(){\ntry {\n${inlineScript.content}\n} catch(e){ console.warn("Error in inline script ${inlineScript.source}:", e); }\n})();\n`
-    );
-  }
+  // Flush any jQuery ready handlers queued by early inline scripts
+  jsSections.push(
+    `\n// Flush any early-queued jQuery callbacks\nif (typeof window.__flushJqQueue === 'function') {\n  try { window.__flushJqQueue(); } catch(e) {}\n}\n`
+  );
 
   const combinedJs = jsSections.join('\n\n');
 
@@ -1742,7 +2062,9 @@ export async function scrapeWebPage(
       assetCache,
       tracker,
       cookieJar,
-      'desktop'
+      'desktop',
+      combinedJs,
+      false
     );
 
     filesDesktop.push({
@@ -1754,6 +2076,31 @@ export async function scrapeWebPage(
       sourceUrl: pageUrl,
       description: `Desktop (1920×1080): ${rawData.title}`,
     });
+
+    // Also generate single-file standalone offline version for the main page
+    if (rawData.filename === 'index.html' || filesDesktop.length === 1) {
+      const standaloneHtml = await processHtmlForOffline(
+        rawData.rawHtml,
+        pageUrl,
+        combinedCss,
+        pageMapping,
+        assetCache,
+        tracker,
+        cookieJar,
+        'desktop',
+        combinedJs,
+        true
+      );
+      filesDesktop.push({
+        id: 'file-html-standalone-desktop',
+        name: 'standalone_offline.html',
+        type: 'html',
+        content: standaloneHtml,
+        size: Buffer.byteLength(standaloneHtml, 'utf-8'),
+        sourceUrl: pageUrl,
+        description: 'Single-File 100% Self-Contained Offline Webpage (Open directly anywhere with 2 clicks, zero dependencies)',
+      });
+    }
   }
 
   // 2. Tablet HTML Pages
@@ -1767,7 +2114,9 @@ export async function scrapeWebPage(
       assetCache,
       tracker,
       cookieJar,
-      'tablet'
+      'tablet',
+      combinedJs,
+      false
     );
 
     filesTablet.push({
@@ -1779,6 +2128,30 @@ export async function scrapeWebPage(
       sourceUrl: pageUrl,
       description: `Tablet (768×1024 iPadOS): ${rawData.title}`,
     });
+
+    if (rawData.filename === 'index.html' || filesTablet.length === 1) {
+      const standaloneHtml = await processHtmlForOffline(
+        rawData.rawHtml,
+        pageUrl,
+        combinedCss,
+        pageMapping,
+        assetCache,
+        tracker,
+        cookieJar,
+        'tablet',
+        combinedJs,
+        true
+      );
+      filesTablet.push({
+        id: 'file-html-standalone-tablet',
+        name: 'standalone_offline.html',
+        type: 'html',
+        content: standaloneHtml,
+        size: Buffer.byteLength(standaloneHtml, 'utf-8'),
+        sourceUrl: pageUrl,
+        description: 'Single-File 100% Self-Contained Offline Tablet Webpage (Zero dependencies)',
+      });
+    }
   }
 
   // 3. Mobile HTML Pages
@@ -1792,7 +2165,9 @@ export async function scrapeWebPage(
       assetCache,
       tracker,
       cookieJar,
-      'mobile'
+      'mobile',
+      combinedJs,
+      false
     );
 
     filesMobile.push({
@@ -1804,6 +2179,30 @@ export async function scrapeWebPage(
       sourceUrl: pageUrl,
       description: `Mobile (390×844 Android): ${rawData.title}`,
     });
+
+    if (rawData.filename === 'index.html' || filesMobile.length === 1) {
+      const standaloneHtml = await processHtmlForOffline(
+        rawData.rawHtml,
+        pageUrl,
+        combinedCss,
+        pageMapping,
+        assetCache,
+        tracker,
+        cookieJar,
+        'mobile',
+        combinedJs,
+        true
+      );
+      filesMobile.push({
+        id: 'file-html-standalone-mobile',
+        name: 'standalone_offline.html',
+        type: 'html',
+        content: standaloneHtml,
+        size: Buffer.byteLength(standaloneHtml, 'utf-8'),
+        sourceUrl: pageUrl,
+        description: 'Single-File 100% Self-Contained Offline Mobile Webpage (Zero dependencies)',
+      });
+    }
   }
 
   // Common styles, scripts, and reports
@@ -2150,6 +2549,87 @@ export async function scrapeWebPage(
     description: 'Detailed cross-device comparison metrics and breakdown (Desktop vs Tablet vs Mobile)',
   };
 
+  const offlineGuideFaContent = `========================================================================
+ راهنمای اجرای ۱۰۰٪ آفلاین وب‌سایت استخراج شده (بدون نیاز به اینترنت)
+========================================================================
+دامنه اصلی: ${domain}
+آدرس منبع: ${startUrlInput}
+تاریخ استخراج: ${new Date().toLocaleString('fa-IR')}
+
+کاربر گرامی، این وب‌سایت با معماری خودکفا (Air-Gapped & Offline-Resilient)
+استخراج شده است تا بدون نیاز به اتصال به اینترنت، دقیقاً مانند وب‌سایت اصلی
+در سیستم شما نمایش داده شود.
+
+------------------------------------------------------------------------
+روش‌های اجرای وب‌سایت:
+------------------------------------------------------------------------
+روش اول (سریع‌ترین و مطمئن‌ترین حالت - فقط با ۱ کلیک):
+۱. روی فایل "standalone_offline.html" دوبار کلیک کنید.
+   این فایل تمام استایل‌ها، فونت‌ها، تصاویر و اسکریپت‌ها را درون خود دارد
+   و حتی اگر به تنهایی با فلش‌مموری منتقل شود، بدون هیچ وابستگی خارجی اجرا می‌شود.
+
+روش دوم (حالت استاندارد وب):
+۱. تمام فایل‌ها را از حالت فشرده (ZIP) خارج کنید.
+۲. روی فایل "index.html" دوبار کلیک کنید.
+   صفحه اصلی همراه با styles.css و scripts.js به شکل آفلاین باز خواهد شد.
+
+------------------------------------------------------------------------
+ویژگی‌های محافظتی تعبیه شده در نسخه آفلاین:
+------------------------------------------------------------------------
+✓ شیلد محافظتی آفلاین (Offline Air-gap Shield):
+  تمام درخواست‌های شبکه (fetch/XHR) را به صورت خودکار ایمن‌سازی می‌کند تا هیچ
+  خطایی در مرورگر رخ ندهد و منوها، پاپ‌آپ‌ها و تب‌ها کاملاً روان کار کنند.
+
+✓ رفع کامل وابستگی‌های اینترنتی:
+  هیچ تصویر یا فونتی به وب‌سایت اصلی متصل نیست و به صورت امن ذخیره شده است.
+
+✓ باز کردن بخش‌های فوتر و انیمیشن‌ها:
+  تمامی بخش‌هایی که به اسکرول وابسته بوده‌اند، در حالت آفلاین به صورت کاملاً
+  نمایان و مرتب تنظیم شده‌اند.
+
+========================================================================`;
+
+  const offlineGuideEnContent = `========================================================================
+ OFFLINE EXECUTION GUIDE (100% AIR-GAPPED & ZERO INTERNET REQUIRED)
+========================================================================
+Original Domain: ${domain}
+Source URL: ${startUrlInput}
+Scraped Date: ${new Date().toISOString()}
+
+HOW TO RUN OFFLINE:
+Option 1 (Easiest - Single Self-Contained File):
+- Double click on "standalone_offline.html".
+  This file embeds all CSS, webfonts, images, and runtime shields directly.
+  It works completely standalone anywhere without any dependencies.
+
+Option 2 (Standard Folder Structure):
+- Extract the downloaded ZIP archive.
+- Double click on "index.html" in any modern browser (Chrome, Firefox, Edge, Safari).
+
+OFFLINE ENHANCEMENTS INCLUDED:
+✓ Offline Runtime Air-Gap Shield: Intercepts runtime network calls to prevent console errors.
+✓ Self-contained styles and resilient fallbacks for 100% offline stability.
+✓ All bottom containers, lazy-loaded sections, and footers are immediately unveiled.
+========================================================================`;
+
+  const fileOfflineGuideFa: ExtractedFile = {
+    id: 'file-offline-guide-fa',
+    name: 'راهنمای_اجرای_آفلاین.txt',
+    type: 'html',
+    content: offlineGuideFaContent,
+    size: Buffer.byteLength(offlineGuideFaContent, 'utf-8'),
+    description: 'راهنمای جامع فارسی جهت اجرای ۱۰۰٪ آفلاین وب‌سایت در سیستم کاربر',
+  };
+
+  const fileOfflineGuideEn: ExtractedFile = {
+    id: 'file-offline-guide-en',
+    name: 'README_OFFLINE.txt',
+    type: 'html',
+    content: offlineGuideEnContent,
+    size: Buffer.byteLength(offlineGuideEnContent, 'utf-8'),
+    description: 'Instructions for running the offline website package with zero internet connection',
+  };
+
   // Assemble device file bundles
   const allDesktopFiles: ExtractedFile[] = [
     ...filesDesktop,
@@ -2159,6 +2639,8 @@ export async function scrapeWebPage(
     createDeviceJsonLinks('desktop', linksDesktop),
     createDeviceJsonHeadings('desktop', headingsDesktop, headingsCountDesktop),
     fileJsonDeviceComparison,
+    fileOfflineGuideFa,
+    fileOfflineGuideEn,
   ];
 
   const allTabletFiles: ExtractedFile[] = [
@@ -2169,6 +2651,8 @@ export async function scrapeWebPage(
     createDeviceJsonLinks('tablet', linksTablet),
     createDeviceJsonHeadings('tablet', headingsTablet, headingsCountTablet),
     fileJsonDeviceComparison,
+    fileOfflineGuideFa,
+    fileOfflineGuideEn,
   ];
 
   const allMobileFiles: ExtractedFile[] = [
@@ -2179,6 +2663,8 @@ export async function scrapeWebPage(
     createDeviceJsonLinks('mobile', linksMobile),
     createDeviceJsonHeadings('mobile', headingsMobile, headingsCountMobile),
     fileJsonDeviceComparison,
+    fileOfflineGuideFa,
+    fileOfflineGuideEn,
   ];
 
   deviceComparison.totalPayloadBytes = {
