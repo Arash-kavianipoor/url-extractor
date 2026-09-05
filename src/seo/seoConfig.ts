@@ -1,5 +1,108 @@
 import { Language, LanguageInfo } from '../types.js';
 
+export interface SeoKeywordCategory {
+  language: string;
+  primary: string;
+  secondary: string[];
+  long_tail: string[];
+}
+
+export interface SeoKeywordsStructure {
+  seo_keywords: {
+    persian: SeoKeywordCategory;
+    english: SeoKeywordCategory;
+    arabic: SeoKeywordCategory;
+    german: SeoKeywordCategory;
+    spanish: SeoKeywordCategory;
+    [key: string]: SeoKeywordCategory;
+  };
+}
+
+export const SEO_KEYWORDS_DATA: SeoKeywordsStructure = {
+  seo_keywords: {
+    persian: {
+      language: "fa",
+      primary: "دانلود وب اسکرپر",
+      secondary: [
+        "استخراج آفلاین سایت",
+        "دانلود کامل سایت برای اجرای آفلاین",
+        "افزونه استخراج لینک مرورگر",
+        "استخراج کد و استایل وبسایت",
+        "ذخیره کامل وبسایت به صورت زیپ"
+      ],
+      long_tail: [
+        "بهترین اکستنشن کروم برای دانلود کامل سایت",
+        "دانلود صفحات سایت بدون اینترنت با فونت و استایل",
+        "چگونه یک وبسایت را کامل با تمام فایل ها ذخیره کنیم"
+      ]
+    },
+    english: {
+      language: "en",
+      primary: "download web scraper",
+      secondary: [
+        "offline website extractor",
+        "download full website for offline browsing",
+        "browser link extraction extension",
+        "extract website code and css styles",
+        "save complete website as zip"
+      ],
+      long_tail: [
+        "best chrome extension to download full website offline",
+        "download webpage with css fonts and inline styles without internet",
+        "how to save entire website offline with all assets and code"
+      ]
+    },
+    arabic: {
+      language: "ar",
+      primary: "تحميل أداة سحب المواقع",
+      secondary: [
+        "استخراج الموقع بدون إنترنت",
+        "تنزيل الموقع بالكامل للتشغيل أوفلاين",
+        "إضافة متصفح لاستخراج الروابط",
+        "استخراج كود وأسلوب الموقع",
+        "حفظ الموقع كاملاً في ملف مضغوط زیپ"
+      ],
+      long_tail: [
+        "أفضل إضافة كروم لتنزيل موقع ويب كامل بدون إنترنت",
+        "تنزيل صفحات الموقع مع الخطوط والأنماط بدون اتصال بالإنترنت",
+        "كيفية حفظ موقع كامل بجميع الملفات والأكواد"
+      ]
+    },
+    german: {
+      language: "de",
+      primary: "Web Scraper herunterladen",
+      secondary: [
+        "Website offline extrahieren",
+        "Komplette Website für Offline-Nutzung herunterladen",
+        "Browser-Erweiterung zur Linkextraktion",
+        "Website-Code und CSS-Stile extrahieren",
+        "Vollständige Website als ZIP speichern"
+      ],
+      long_tail: [
+        "Beste Chrome-Erweiterung zum Herunterladen kompletter Websites",
+        "Webseiten ohne Internet mit Schriftarten und Stilen herunterladen",
+        "Wie man eine Website komplett mit allen Dateien speichert"
+      ]
+    },
+    spanish: {
+      language: "es",
+      primary: "descargar web scraper",
+      secondary: [
+        "extractor de sitios web offline",
+        "descargar sitio web completo para uso sin conexión",
+        "extensión de navegador para extraer enlaces",
+        "extraer código y estilos css de páginas web",
+        "guardar sitio web completo en formato zip"
+      ],
+      long_tail: [
+        "mejor extensión de chrome para descargar páginas web completas offline",
+        "descargar páginas web sin internet con fuentes y estilos",
+        "cómo guardar un sitio web completo con todos sus archivos"
+      ]
+    }
+  }
+};
+
 export interface SeoLanguageConfig {
   code: Language;
   name: string;
@@ -29,7 +132,18 @@ export const SEO_LANGUAGES: Record<Language, SeoLanguageConfig> = {
     dir: 'ltr',
     title: 'Web Link & Code Extractor | 100% Offline Website Scraper & ZIP Export',
     description: 'Extract all web links, inline CSS stylesheets, fonts, HTML, and JS with zero-internet offline execution. Instant ZIP export with flat files or dedicated page folder structures.',
-    keywords: ['web scraper', 'link extractor', 'offline website', 'download webpage', 'inline css', 'extract html js', 'zip export'],
+    keywords: [
+      SEO_KEYWORDS_DATA.seo_keywords.english.primary,
+      ...SEO_KEYWORDS_DATA.seo_keywords.english.secondary,
+      ...SEO_KEYWORDS_DATA.seo_keywords.english.long_tail,
+      'web scraper',
+      'link extractor',
+      'offline website',
+      'download webpage',
+      'inline css',
+      'extract html js',
+      'zip export'
+    ],
   },
   fa: {
     code: 'fa',
@@ -39,7 +153,17 @@ export const SEO_LANGUAGES: Record<Language, SeoLanguageConfig> = {
     dir: 'rtl',
     title: 'استخراج‌کننده لینک و کدهای وب | ذخیره سایت آفلاین و دانلود ZIP بدون اینترنت',
     description: 'استخراج کامل تمام لینک‌ها، استایل‌های CSS، کدهای HTML و جاوااسکریپت با قابلیت اجرای ۱۰۰٪ آفلاین در کامپیوتر بدون نیاز به اینترنت به همراه فولدر‌بندی مجزا و فایل ZIP فشرده.',
-    keywords: ['استخراج لینک', 'دانلود کامل سایت آفلاین', 'استخراج CSS', 'دانلود سایت با استایل', 'اسکرپر وب', 'پکیج آفلاین زیپ'],
+    keywords: [
+      SEO_KEYWORDS_DATA.seo_keywords.persian.primary,
+      ...SEO_KEYWORDS_DATA.seo_keywords.persian.secondary,
+      ...SEO_KEYWORDS_DATA.seo_keywords.persian.long_tail,
+      'استخراج لینک',
+      'دانلود کامل سایت آفلاین',
+      'استخراج CSS',
+      'دانلود سایت با استایل',
+      'اسکرپر وب',
+      'پکیج آفلاین زیپ'
+    ],
   },
   ar: {
     code: 'ar',
@@ -49,7 +173,16 @@ export const SEO_LANGUAGES: Record<Language, SeoLanguageConfig> = {
     dir: 'rtl',
     title: 'مستخرج روابط وأكواد الويب | حفظ الموقع بدون إنترنت وتنزيل ZIP',
     description: 'استخراج جميع الروابط، وأوراق أنماط CSS، وHTML، وJS مع تشغيل كامل بدون اتصال بالإنترنت وتصدير ZIP سريع مع تنظيم المجلدات.',
-    keywords: ['مستخرج روابط', 'تحميل موقع أوفلاين', 'استخراج كود الموقع', 'تنزيل css كامل', 'أداة سحب المواقع'],
+    keywords: [
+      SEO_KEYWORDS_DATA.seo_keywords.arabic.primary,
+      ...SEO_KEYWORDS_DATA.seo_keywords.arabic.secondary,
+      ...SEO_KEYWORDS_DATA.seo_keywords.arabic.long_tail,
+      'مستخرج روابط',
+      'تحميل موقع أوفلاين',
+      'استخراج كود الموقع',
+      'تنزيل css كامل',
+      'أداة سحب المواقع'
+    ],
   },
   es: {
     code: 'es',
@@ -59,7 +192,16 @@ export const SEO_LANGUAGES: Record<Language, SeoLanguageConfig> = {
     dir: 'ltr',
     title: 'Extractor de Enlaces y Código Web | Descarga Sitios Offline en ZIP',
     description: 'Extrae todos los enlaces, hojas de estilo CSS, HTML y JS con ejecución 100% offline sin conexión a internet y exportación ZIP optimizada.',
-    keywords: ['extractor de enlaces', 'descargar web offline', 'extraer css html', 'guardar pagina web', 'scraper web'],
+    keywords: [
+      SEO_KEYWORDS_DATA.seo_keywords.spanish.primary,
+      ...SEO_KEYWORDS_DATA.seo_keywords.spanish.secondary,
+      ...SEO_KEYWORDS_DATA.seo_keywords.spanish.long_tail,
+      'extractor de enlaces',
+      'descargar web offline',
+      'extraer css html',
+      'guardar pagina web',
+      'scraper web'
+    ],
   },
   zh: {
     code: 'zh',
@@ -89,7 +231,16 @@ export const SEO_LANGUAGES: Record<Language, SeoLanguageConfig> = {
     dir: 'ltr',
     title: 'Web-Link & Code-Extraktor | 100% Offline-Website-Scraper & ZIP-Export',
     description: 'Extrahieren Sie alle Web-Links, Inline-CSS-Stylesheets, HTML und JS für die Offline-Ausführung ohne Internetverbindung im ZIP-Paket.',
-    keywords: ['Link-Extraktor', 'Website offline speichern', 'CSS extrahieren', 'Web Scraper', 'ZIP Export'],
+    keywords: [
+      SEO_KEYWORDS_DATA.seo_keywords.german.primary,
+      ...SEO_KEYWORDS_DATA.seo_keywords.german.secondary,
+      ...SEO_KEYWORDS_DATA.seo_keywords.german.long_tail,
+      'Link-Extraktor',
+      'Website offline speichern',
+      'CSS extrahieren',
+      'Web Scraper',
+      'ZIP Export'
+    ],
   },
   ru: {
     code: 'ru',

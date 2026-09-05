@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,46 +11,73 @@
   <div id="app" class="container">
     <!-- Header -->
     <header class="app-header">
-      <div class="brand">
-        <div class="brand-logo">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-          </svg>
+      <div class="header-top-row">
+        <div class="brand">
+          <div class="brand-logo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 id="i18n-app-title">Web Scraper Pro</h1>
+            <p id="i18n-app-subtitle" class="subtitle">Browser Extension | 100% Offline Extractor, Live Preview & Code Editor</p>
+          </div>
         </div>
-        <div>
-          <h1 id="i18n-app-title">Web Scraper Pro</h1>
-          <p id="i18n-app-subtitle" class="subtitle">اکستنشن مرورگر | استخراج ۱۰۰٪ آفلاین، پیش‌نمایش زنده و ویرایشگر کد</p>
+        <div class="header-actions">
+          <!-- Language Selector Menu -->
+          <div class="lang-select-container">
+            <select id="select-lang" class="lang-select" title="Select Language">
+              <option value="en" selected>🇬🇧 English</option>
+              <option value="fa">🇮🇷 فارسی</option>
+              <option value="ar">🇸🇦 العربية</option>
+              <option value="de">🇩🇪 Deutsch</option>
+              <option value="es">🇪🇸 Español</option>
+              <option value="zh">🇨🇳 中文</option>
+              <option value="fr">🇫🇷 Français</option>
+              <option value="ru">🇷🇺 Русский</option>
+              <option value="pt">🇵🇹 Português</option>
+              <option value="ja">🇯🇵 日本語</option>
+              <option value="hi">🇮🇳 हिन्दी</option>
+              <option value="it">🇮🇹 Italiano</option>
+              <option value="tr">🇹🇷 Türkçe</option>
+              <option value="ko">🇰🇷 한국어</option>
+              <option value="nl">🇳🇱 Nederlands</option>
+              <option value="pl">🇵🇱 Polski</option>
+              <option value="id">🇮🇩 Bahasa Indonesia</option>
+              <option value="vi">🇻🇳 Tiếng Việt</option>
+              <option value="ur">🇵🇰 اردو</option>
+              <option value="bn">🇧🇩 বাংলা</option>
+            </select>
+          </div>
+          <!-- Theme Switcher -->
+          <button id="btn-toggle-theme" class="btn-icon" title="Toggle Dark / Light Mode">
+            <svg id="theme-icon-dark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+            <svg id="theme-icon-light" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </button>
+          <!-- Fullscreen Tab Button -->
+          <button id="btn-fullscreen" class="btn-icon" title="Fullscreen View">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+            </svg>
+          </button>
         </div>
       </div>
-      <div class="header-actions">
-        <!-- Language Switcher -->
-        <button id="btn-toggle-lang" class="btn-icon" title="تغییر زبان / Switch Language">
-          <span id="lang-indicator">EN</span>
-        </button>
-        <!-- Theme Switcher -->
-        <button id="btn-toggle-theme" class="btn-icon" title="تغییر حالت تیره / روشن">
-          <svg id="theme-icon-dark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-          </svg>
-          <svg id="theme-icon-light" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="5"></circle>
-            <line x1="12" y1="1" x2="12" y2="3"></line>
-            <line x1="12" y1="21" x2="12" y2="23"></line>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-            <line x1="1" y1="12" x2="3" y2="12"></line>
-            <line x1="21" y1="12" x2="23" y2="12"></line>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-          </svg>
-        </button>
-        <!-- Fullscreen Tab Button -->
-        <button id="btn-fullscreen" class="btn-icon" title="نمایش در تب تمام‌صفحه">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-          </svg>
-        </button>
+      <!-- Website designed by Sorena-IT -->
+      <div class="header-credit">
+        Website designed by <a href="https://sorena-it.com" target="_blank" rel="noopener noreferrer">Sorena-IT</a>
       </div>
     </header>
 
@@ -58,43 +85,43 @@
     <section class="action-card">
       <div class="card-body">
         <div class="target-info">
-          <span id="i18n-tab-label" class="label">صفحه فعال در تب مرورگر:</span>
-          <span id="active-tab-title" class="title-text">در حال شناسایی تب جاری...</span>
+          <span id="i18n-tab-label" class="label">Active Tab in Browser:</span>
+          <span id="active-tab-title" class="title-text">Identifying active browser tab...</span>
           <span id="active-tab-url" class="url-text">-</span>
         </div>
 
         <!-- Crawl Mode & Device Options -->
         <div class="options-bar">
           <div class="mode-selector">
-            <span class="option-label" id="i18n-mode-label">حالت استخراج:</span>
+            <span class="option-label" id="i18n-mode-label">Crawl Mode:</span>
             <div class="segmented-control">
               <button class="seg-btn active" data-mode="single" id="btn-mode-single">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                 </svg>
-                <span id="i18n-single-page">تک‌صفحه</span>
+                <span id="i18n-single-page">Single Page</span>
               </button>
               <button class="seg-btn" data-mode="all" id="btn-mode-all">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
                   <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
                 </svg>
-                <span id="i18n-all-pages">کل سایت (چندصفحه‌ای)</span>
+                <span id="i18n-all-pages">Full Site (Multi-Page)</span>
               </button>
             </div>
           </div>
 
           <div class="device-selector">
-            <span class="option-label" id="i18n-device-label">دستگاه:</span>
+            <span class="option-label" id="i18n-device-label">Device:</span>
             <div class="segmented-control">
               <button class="seg-btn active" data-device="desktop" title="Desktop 1920x1080">
-                <span>💻 دسکتاپ</span>
+                <span>💻 Desktop</span>
               </button>
               <button class="seg-btn" data-device="tablet" title="Tablet 768x1024">
-                <span>📱 تبلت</span>
+                <span>📱 Tablet</span>
               </button>
               <button class="seg-btn" data-device="mobile" title="Mobile 390x844">
-                <span>📲 موبایل</span>
+                <span>📲 Mobile</span>
               </button>
             </div>
           </div>
@@ -106,7 +133,7 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
             </svg>
-            <span id="btn-extract-label">استخراج آنی صفحه فعال (۰ میلی‌ثانیه)</span>
+            <span id="btn-extract-label">Extract Active Page Now (0 ms)</span>
           </button>
         </div>
 
@@ -115,7 +142,7 @@
           <div class="progress-bar-bg">
             <div id="extraction-progress-bar" class="progress-bar-fill"></div>
           </div>
-          <span id="extraction-progress-text" class="progress-label">در حال پردازش مستقیم DOM...</span>
+          <span id="extraction-progress-text" class="progress-label">Extracting DOM directly...</span>
         </div>
       </div>
     </section>
@@ -124,69 +151,69 @@
     <section id="stats-section" class="stats-bar hidden">
       <div class="stat-item">
         <span class="stat-value" id="stat-links">0</span>
-        <span class="stat-label" id="i18n-stat-links">کل لینک‌ها</span>
+        <span class="stat-label" id="i18n-stat-links">Total Links</span>
       </div>
       <div class="stat-item">
         <span class="stat-value" id="stat-internal">0</span>
-        <span class="stat-label" id="i18n-stat-internal">داخلی</span>
+        <span class="stat-label" id="i18n-stat-internal">Internal</span>
       </div>
       <div class="stat-item">
         <span class="stat-value" id="stat-external">0</span>
-        <span class="stat-label" id="i18n-stat-external">خارجی</span>
+        <span class="stat-label" id="i18n-stat-external">External</span>
       </div>
       <div class="stat-item">
         <span class="stat-value" id="stat-headings">0</span>
-        <span class="stat-label" id="i18n-stat-headings">تیترها (H1-H6)</span>
+        <span class="stat-label" id="i18n-stat-headings">Headings (H1-H6)</span>
       </div>
       <div class="stat-item">
-        <span class="stat-value text-emerald" id="stat-time">۰ ms</span>
-        <span class="stat-label" id="i18n-stat-time">زمان محلی</span>
+        <span class="stat-value text-emerald" id="stat-time">0 ms</span>
+        <span class="stat-label" id="i18n-stat-time">Local Time</span>
       </div>
     </section>
 
     <!-- Navigation Tabs -->
     <nav id="tabs-nav" class="tabs-nav hidden">
       <button class="tab-btn active" data-tab="tab-links">
-        <span id="i18n-tab-links">لینک‌ها</span>
+        <span id="i18n-tab-links">Links</span>
         <span id="badge-links-count" class="badge">0</span>
       </button>
       <button class="tab-btn" data-tab="tab-headings">
-        <span id="i18n-tab-headings">تیترها (H1-H6)</span>
+        <span id="i18n-tab-headings">Headings (H1-H6)</span>
         <span id="badge-headings-count" class="badge">0</span>
       </button>
       <button class="tab-btn tab-btn-preview" data-tab="tab-preview">
-        <span id="i18n-tab-preview">👁️ پیش‌نمایش زنده</span>
+        <span id="i18n-tab-preview">👁️ Live Preview</span>
       </button>
       <button class="tab-btn tab-btn-editor" data-tab="tab-editor">
-        <span id="i18n-tab-editor">💻 ویرایشگر کد</span>
+        <span id="i18n-tab-editor">💻 Code Editor</span>
       </button>
       <button class="tab-btn" data-tab="tab-export">
-        <span id="i18n-tab-export">خروجی اکسل و CSV</span>
+        <span id="i18n-tab-export">Excel & CSV Export</span>
       </button>
       <button class="tab-btn highlight-tab" data-tab="tab-offline">
-        <span id="i18n-tab-offline">دانلود سایت آفلاین (ZIP)</span>
+        <span id="i18n-tab-offline">Download Offline Site (ZIP)</span>
       </button>
     </nav>
 
     <!-- Tab 1: Links Table -->
     <main id="tab-links" class="tab-pane active">
       <div class="table-toolbar">
-        <input type="text" id="search-links" placeholder="جستجو در انکر تکست یا آدرس URL..." class="input-search">
+        <input type="text" id="search-links" placeholder="Search anchor text or target URL..." class="input-search">
         <select id="filter-link-type" class="select-filter">
-          <option value="all">همه انواع لینک</option>
-          <option value="internal">فقط لینک‌های داخلی</option>
-          <option value="external">فقط لینک‌های خارجی</option>
-          <option value="asset">فایل‌ها و مدیا</option>
-          <option value="anchor">انکرهای درون‌صفحه‌ای (#)</option>
+          <option value="all">All link types</option>
+          <option value="internal">Internal only</option>
+          <option value="external">External only</option>
+          <option value="asset">Files & media</option>
+          <option value="anchor">In-page anchors (#)</option>
         </select>
         <select id="filter-link-device" class="select-filter">
-          <option value="all">همه دستگاه‌ها</option>
-          <option value="desktop">دسکتاپ (Desktop)</option>
-          <option value="tablet">تبلت (Tablet)</option>
-          <option value="mobile">موبایل (Mobile)</option>
+          <option value="all">All devices</option>
+          <option value="desktop">Desktop</option>
+          <option value="tablet">Tablet</option>
+          <option value="mobile">Mobile</option>
         </select>
         <button id="btn-quick-export-links" class="btn btn-sm btn-secondary">
-          خروجی CSV
+          Export CSV
         </button>
       </div>
       <div class="table-container">
@@ -194,15 +221,15 @@
           <thead>
             <tr>
               <th width="45">#</th>
-              <th>انکر تکست (متن لینک)</th>
-              <th>آدرس مقصد (URL)</th>
-              <th width="85">دستگاه</th>
-              <th width="85">نوع</th>
-              <th width="60">عملیات</th>
+              <th>Anchor Text</th>
+              <th>Target URL</th>
+              <th width="85">Device</th>
+              <th width="85">Type</th>
+              <th width="60">Action</th>
             </tr>
           </thead>
           <tbody id="links-tbody">
-            <tr><td colspan="6" class="empty-state">داده‌ای استخراج نشده است. روی دکمه استخراج بالا کلیک کنید.</td></tr>
+            <tr><td colspan="6" class="empty-state">No links extracted yet. Click the extract button above.</td></tr>
           </tbody>
         </table>
       </div>
@@ -223,12 +250,12 @@
           <thead>
             <tr>
               <th width="50">#</th>
-              <th width="70">سطح</th>
-              <th>متن سرتیتر</th>
+              <th width="70">Level</th>
+              <th>Heading Text</th>
             </tr>
           </thead>
           <tbody id="headings-tbody">
-            <tr><td colspan="3" class="empty-state">داده‌ای استخراج نشده است.</td></tr>
+            <tr><td colspan="3" class="empty-state">No headings extracted yet.</td></tr>
           </tbody>
         </table>
       </div>
@@ -240,22 +267,22 @@
         <div class="preview-toolbar">
           <div class="preview-device-switcher">
             <button class="preview-dev-btn active" data-pdev="desktop" title="Desktop View">
-              <span>💻 دسکتاپ</span>
+              <span>💻 Desktop</span>
             </button>
             <button class="preview-dev-btn" data-pdev="tablet" title="Tablet View (768px)">
-              <span>📱 تبلت (768px)</span>
+              <span>📱 Tablet (768px)</span>
             </button>
             <button class="preview-dev-btn" data-pdev="mobile" title="Mobile View (390px)">
-              <span>📲 موبایل (390px)</span>
+              <span>📲 Mobile (390px)</span>
             </button>
           </div>
           <div class="preview-actions">
-            <span id="preview-resolution-label" class="badge-resolution">1920 × 1080 (دسکتاپ)</span>
-            <button id="btn-reload-preview" class="btn btn-sm btn-secondary" title="بازخوانی پیش‌نمایش">
-              🔄 رفرش
+            <span id="preview-resolution-label" class="badge-resolution">1920 × 1080 (Desktop)</span>
+            <button id="btn-reload-preview" class="btn btn-sm btn-secondary" title="Reload Preview">
+              🔄 Reload
             </button>
-            <button id="btn-open-preview-window" class="btn btn-sm btn-primary" title="باز کردن در پنجره مستقل">
-              ↗️ پنجره جدید
+            <button id="btn-open-preview-window" class="btn btn-sm btn-primary" title="Open in New Window">
+              ↗️ New Window
             </button>
           </div>
         </div>
@@ -277,18 +304,18 @@
           <div class="editor-actions">
             <span id="editor-file-size" class="badge-size">0 KB</span>
             <button id="btn-apply-code-changes" class="btn btn-sm btn-primary">
-              💾 اعمال و بروزرسانی پیش‌نمایش
+              💾 Save & Update Preview
             </button>
             <button id="btn-download-active-file" class="btn btn-sm btn-secondary">
-              ⬇️ دانلود این فایل
+              ⬇️ Download File
             </button>
             <button id="btn-reset-code-changes" class="btn btn-sm btn-danger">
-              ↺ بازنشانی
+              ↺ Reset
             </button>
           </div>
         </div>
         <div class="editor-textarea-wrapper">
-          <textarea id="code-editor-textarea" spellcheck="false" placeholder="محتوای فایل در اینجا نمایش داده می‌شود..."></textarea>
+          <textarea id="code-editor-textarea" spellcheck="false" placeholder="File content will appear here..."></textarea>
         </div>
       </div>
     </main>
@@ -296,30 +323,30 @@
     <!-- Tab 5: Structured CSV Export -->
     <main id="tab-export" class="tab-pane hidden">
       <div class="export-box">
-        <h3>خروجی فایل ساختاریافته اکسل (CSV) با کدگذاری UTF-8 BOM</h3>
-        <p class="desc">این خروجی بدون هیچ‌گونه به‌هم‌ریختگی حروف فارسی در Microsoft Excel و Google Sheets باز می‌شود.</p>
+        <h3>Structured Excel (CSV) Export with UTF-8 BOM Encoding</h3>
+        <p class="desc">Opens cleanly in Microsoft Excel and Google Sheets with full international character support.</p>
         
         <div class="export-options">
           <label class="radio-label">
             <input type="radio" name="csv-type" value="combined" checked>
-            <span>مجموعه یکپارچه (ترکیب لینک‌ها و تمام تیترهای H1-H6)</span>
+            <span>Unified bundle (Combined Links and H1-H6 Headings)</span>
           </label>
           <label class="radio-label">
             <input type="radio" name="csv-type" value="links">
-            <span>فقط لینک‌ها (Anchor Text + URL + Type + Devices)</span>
+            <span>Links only (Anchor Text + URL + Type + Devices)</span>
           </label>
           <label class="radio-label">
             <input type="radio" name="csv-type" value="headings">
-            <span>فقط ساختار درختی تیترها (H1 تا H6)</span>
+            <span>Headings hierarchy only (H1 through H6)</span>
           </label>
         </div>
 
         <div class="export-actions">
           <button id="btn-download-structured-csv" class="btn btn-primary">
-            دانلود فایل CSV سازگار با Excel
+            Download Excel-Compatible CSV
           </button>
           <button id="btn-download-json" class="btn btn-secondary">
-            دانلود خروجی JSON
+            Download JSON Export
           </button>
         </div>
       </div>
@@ -329,36 +356,36 @@
     <main id="tab-offline" class="tab-pane hidden">
       <div class="export-box">
         <div class="badge-title-row">
-          <h3>دانلود بسته وب‌سایت ۱۰۰٪ آفلاین (Air-Gap Zero-Network)</h3>
-          <span class="pill-verified">تضمین اجرای بدون اینترنت</span>
+          <h3>Download 100% Offline Website Bundle (Air-Gap Zero-Network)</h3>
+          <span class="pill-verified">Guaranteed Zero-Internet Execution</span>
         </div>
         <p class="desc">
-          تمام استایل‌ها و فونت‌ها در <code class="code-tag">styles.css</code> یکپارچه می‌شوند، کدهای تعاملی و سپر ضد خطای آفلاین در <code class="code-tag">scripts.js</code> قرار می‌گیرند و اسکریپت‌های ریموت مسدودکننده حذف می‌گردند.
+          All styles and fonts are consolidated into <code class="code-tag">styles.css</code>, interactive behavior and offline shields in <code class="code-tag">scripts.js</code>, and remote tracking scripts are stripped.
         </p>
         
         <div class="benefits-list">
-          <div class="benefit-item">✓ فایل CSS کاملاً مجزا و خارجی در <code class="code-tag">styles.css</code> بدون وابستگی به اینترنت</div>
-          <div class="benefit-item">✓ مجهز به سپر دفاعی Air-Gap (شبیه‌ساز Fetch/XHR، وردپرس، المنتور و جی‌کوئری)</div>
-          <div class="benefit-item">✓ دانلود و ذخیره تمام تصاویر، وب‌پی (WebP)، آیکون‌ها و ویدیوها درون پوشه <code class="code-tag">assets/</code></div>
-          <div class="benefit-item">✓ حذف کامل تگ‌های ریموت مسدودکننده، ترکرها و ارورهای ERR_INTERNET_DISCONNECTED</div>
-          <div class="benefit-item">✓ رفع ارورهای Slider Revolution (rs6.css, rbtools.min.js) و کلودفلر (cdn-cgi)</div>
-          <div class="benefit-item">✓ شامل گزارش گرافیکی لینک‌ها در reports/links_report.html</div>
-          <div class="benefit-item">✓ تضمین پکیج کامل با دارایی‌های اورجینال با حجم واقعی (بالای ۵۰ مگابایت برای سایت‌های چندرسانه‌ای)</div>
+          <div class="benefit-item">✓ Fully standalone external stylesheet in <code class="code-tag">styles.css</code> with no internet dependency</div>
+          <div class="benefit-item">✓ Equipped with Air-Gap defense shield (Fetch/XHR, WordPress, Elementor & jQuery mocks)</div>
+          <div class="benefit-item">✓ Download and bundle all images, WebP, SVG icons, and videos inside <code class="code-tag">assets/</code></div>
+          <div class="benefit-item">✓ Strips remote blocking trackers and avoids ERR_INTERNET_DISCONNECTED warnings</div>
+          <div class="benefit-item">✓ Fixes Slider Revolution (rs6.css, rbtools.min.js) and Cloudflare cdn-cgi errors</div>
+          <div class="benefit-item">✓ Includes graphical links report at reports/links_report.html</div>
+          <div class="benefit-item">✓ Complete bundle with authentic original assets and real file sizes (> 50MB for rich sites)</div>
         </div>
 
         <div class="offline-media-option" style="margin: 14px 0; padding: 12px 14px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px;">
           <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #10b981;">
             <input type="checkbox" id="chk-download-all-media" checked style="accent-color: #10b981; width: 16px; height: 16px;">
-            <span>دانلود پکیج کامل دارایی‌ها (تصاویر و ویدیوهای باکیفیت بالا - حجم کامل > ۵۰MB)</span>
+            <span>Download complete asset bundle (High-res images & media - full size > 50MB)</span>
           </label>
           <p style="margin: 4px 0 0 24px; font-size: 11px; opacity: 0.85; color: #cbd5e1;">
-            تمامی تصاویر، فایل‌های WebP، ویدیوهای MP4 و فونت‌ها مستقیماً دانلود شده و در آرشیو قرار می‌گیرند تا سایت بدون اینترنت کاملاً مانند نسخه آنلاین نمایش داده شود.
+            All images, WebP files, MP4 videos, and fonts are downloaded and archived locally so the site renders identically offline.
           </p>
         </div>
 
         <div id="offline-progress-status" class="progress-status hidden">
           <div class="spinner-sm"></div>
-          <span id="offline-progress-text">در حال آماده‌سازی پکیج آفلاین...</span>
+          <span id="offline-progress-text">Preparing offline package...</span>
         </div>
 
         <div class="offline-download-actions">
@@ -368,7 +395,7 @@
               <polyline points="7 10 12 15 17 10"></polyline>
               <line x1="12" y1="15" x2="12" y2="3"></line>
             </svg>
-            <span>دانلود بسته کامل آفلاین (ZIP چندفایلی)</span>
+            <span>Download Complete Offline Package (Multi-File ZIP)</span>
           </button>
 
           <button id="btn-download-standalone-html" class="btn btn-secondary btn-lg">
@@ -378,7 +405,7 @@
               <line x1="16" y1="13" x2="8" y2="13"></line>
               <line x1="16" y1="17" x2="8" y2="17"></line>
             </svg>
-            <span>دانلود تک‌فایل مستقل (Standalone HTML)</span>
+            <span>Download Standalone Single File (.html)</span>
           </button>
 
           <button id="btn-download-all-devices" class="btn btn-accent btn-lg">
@@ -387,7 +414,7 @@
               <line x1="8" y1="21" x2="16" y2="21"></line>
               <line x1="12" y1="17" x2="12" y2="21"></line>
             </svg>
-            <span>دانلود پکیج ۳ دستگاه (Desktop, Tablet, Mobile) در ۱ فایل ZIP</span>
+            <span>Download 3-Device Package (Desktop, Tablet, Mobile) in 1 ZIP</span>
           </button>
 
           <button id="btn-download-visual-report" class="btn btn-outline btn-lg">
@@ -397,7 +424,7 @@
               <path d="M13 17V5"></path>
               <path d="M8 17v-3"></path>
             </svg>
-            <span>دانلود گزارش گرافیکی و تحلیلی لینک‌ها (links_report.html)</span>
+            <span>Download Visual Links Report (links_report.html)</span>
           </button>
         </div>
       </div>

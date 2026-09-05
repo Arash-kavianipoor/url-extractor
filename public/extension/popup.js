@@ -5,7 +5,7 @@ let currentScrapeResult = null;
 let currentMode = 'single'; // 'single' | 'all'
 let currentDevice = 'desktop'; // 'desktop' | 'tablet' | 'mobile'
 let currentTheme = 'dark';
-let currentLang = 'fa';
+let currentLang = 'en';
 
 // Virtual Filesystem: Holds in-memory files for editing, previewing, and ZIP bundling
 let virtualFiles = [];
@@ -17,7 +17,7 @@ let previewDevice = 'desktop';
 let currentOfflineAssets = []; // [{ path: string, data: ArrayBuffer, size: number }]
 let totalDownloadedAssetBytes = 0;
 
-// Bilingual translations dictionary
+// Multilingual translations dictionary (all 20 languages)
 const I18N = {
   fa: {
     appTitle: 'Web Scraper Pro',
@@ -88,6 +88,636 @@ const I18N = {
     copySuccess: 'URL copied to clipboard!',
     applySuccess: 'Changes applied and live preview updated successfully!',
     resetConfirm: 'Are you sure you want to reset this file to its original state?'
+  },
+  ar: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'إضافة المتصفح | استخراج بدون إنترنت، معاينة حية ومحرر أكواد',
+    tabLabel: 'علامة التبويب النشطة في المتصفح:',
+    detectingTab: 'جارٍ تحديد علامة التبويب النشطة...',
+    modeLabel: 'وضع الاستخراج:',
+    singlePage: 'صفحة واحدة',
+    allPages: 'الموقع بالكامل (متعدد الصفحات)',
+    deviceLabel: 'الجهاز:',
+    btnExtract: 'استخراج الصفحة النشطة فوراً (0 ميلي ثانية)',
+    btnExtractLoading: 'جارٍ استخراج DOM مباشرة...',
+    btnExtractCrawling: 'جارٍ الزحف إلى الروابط الداخلية...',
+    btnExtractSuccess: '✓ تم الاستخراج بنجاح',
+    statLinks: 'إجمالي الروابط',
+    statInternal: 'داخلية',
+    statExternal: 'خارجية',
+    statHeadings: 'العناوين (H1-H6)',
+    statTime: 'الوقت المحلي',
+    tabLinks: 'الروابط',
+    tabHeadings: 'العناوين (H1-H6)',
+    tabPreview: '👁️ معاينة حية',
+    tabEditor: '💻 محرر الأكواد',
+    tabExport: 'تصدير Excel و CSV',
+    tabOffline: 'تنزيل الموقع أوفلاين (ZIP)',
+    searchPlaceholder: 'بحث في نص الرابط أو العنوان URL...',
+    allTypes: 'جميع أنواع الروابط',
+    internalOnly: 'روابط داخلية فقط',
+    externalOnly: 'روابط خارجية فقط',
+    assetOnly: 'الملفات والوسائط',
+    anchorOnly: 'مراسٍ داخل الصفحة (#)',
+    allDevices: 'جميع الأجهزة',
+    copySuccess: 'تم نسخ الرابط إلى الحافظة!',
+    applySuccess: 'تم تطبيق التغييرات وتحديث المعاينة الحية بنجاح!',
+    resetConfirm: 'هل أنت متأكد أنك تريد إعادة هذا الملف إلى حالته الأصلية؟'
+  },
+  de: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'Browser-Erweiterung | 100% Offline-Extraktor, Live-Vorschau & Code-Editor',
+    tabLabel: 'Aktiver Tab im Browser:',
+    detectingTab: 'Aktiven Browser-Tab ermitteln...',
+    modeLabel: 'Crawl-Modus:',
+    singlePage: 'Einzelseite',
+    allPages: 'Ganze Website (Mehrseitig)',
+    deviceLabel: 'Gerät:',
+    btnExtract: 'Aktive Seite jetzt extrahieren (0 ms)',
+    btnExtractLoading: 'DOM wird direkt extrahiert...',
+    btnExtractCrawling: 'Interne Links werden durchsucht...',
+    btnExtractSuccess: '✓ Extraktion erfolgreich abgeschlossen',
+    statLinks: 'Links gesamt',
+    statInternal: 'Intern',
+    statExternal: 'Extern',
+    statHeadings: 'Überschriften (H1-H6)',
+    statTime: 'Lokale Zeit',
+    tabLinks: 'Links',
+    tabHeadings: 'Überschriften (H1-H6)',
+    tabPreview: '👁️ Live-Vorschau',
+    tabEditor: '💻 Code-Editor',
+    tabExport: 'Excel & CSV Export',
+    tabOffline: 'Offline-Website (ZIP)',
+    searchPlaceholder: 'Ankertext oder URL suchen...',
+    allTypes: 'Alle Link-Typen',
+    internalOnly: 'Nur interne Links',
+    externalOnly: 'Nur externe Links',
+    assetOnly: 'Dateien & Medien',
+    anchorOnly: 'Seitenanker (#)',
+    allDevices: 'Alle Geräte',
+    copySuccess: 'URL in die Zwischenablage kopiert!',
+    applySuccess: 'Änderungen übernommen und Live-Vorschau aktualisiert!',
+    resetConfirm: 'Möchten Sie diese Datei wirklich auf den Originalzustand zurücksetzen?'
+  },
+  es: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'Extensión de Navegador | Extractor 100% Offline, Vista Previa y Editor',
+    tabLabel: 'Pestaña activa en el navegador:',
+    detectingTab: 'Identificando pestaña activa...',
+    modeLabel: 'Modo de extracción:',
+    singlePage: 'Página individual',
+    allPages: 'Sitio completo (Multi-página)',
+    deviceLabel: 'Dispositivo:',
+    btnExtract: 'Extraer página activa ahora (0 ms)',
+    btnExtractLoading: 'Extrayendo DOM directamente...',
+    btnExtractCrawling: 'Rastreando enlaces internos del sitio...',
+    btnExtractSuccess: '✓ Extracción completada con éxito',
+    statLinks: 'Total de Enlaces',
+    statInternal: 'Internos',
+    statExternal: 'Externos',
+    statHeadings: 'Encabezados (H1-H6)',
+    statTime: 'Hora local',
+    tabLinks: 'Enlaces',
+    tabHeadings: 'Encabezados (H1-H6)',
+    tabPreview: '👁️ Vista previa en vivo',
+    tabEditor: '💻 Editor de código',
+    tabExport: 'Exportar Excel y CSV',
+    tabOffline: 'Sitio web offline (ZIP)',
+    searchPlaceholder: 'Buscar texto de anclaje o URL...',
+    allTypes: 'Todos los tipos de enlace',
+    internalOnly: 'Solo enlaces internos',
+    externalOnly: 'Solo enlaces externos',
+    assetOnly: 'Archivos y medios',
+    anchorOnly: 'Anclajes de página (#)',
+    allDevices: 'Todos los dispositivos',
+    copySuccess: '¡URL copiada al portapapeles!',
+    applySuccess: '¡Cambios aplicados y vista previa actualizada con éxito!',
+    resetConfirm: '¿Estás seguro de que deseas restablecer este archivo a su estado original?'
+  },
+  zh: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: '浏览器扩展 | 100%离线提取、实时预览与代码编辑器',
+    tabLabel: '当前活动标签页：',
+    detectingTab: '正在识别当前浏览器标签页...',
+    modeLabel: '抓取模式：',
+    singlePage: '单页面',
+    allPages: '全站（多页面）',
+    deviceLabel: '设备类型：',
+    btnExtract: '立即提取当前页面（0毫秒）',
+    btnExtractLoading: '正在直接提取DOM结构...',
+    btnExtractCrawling: '正在抓取站内链接...',
+    btnExtractSuccess: '✓ 提取成功完成',
+    statLinks: '链接总数',
+    statInternal: '站内链接',
+    statExternal: '外部链接',
+    statHeadings: '标题结构 (H1-H6)',
+    statTime: '本地时间',
+    tabLinks: '链接列表',
+    tabHeadings: '标题层级 (H1-H6)',
+    tabPreview: '👁️ 实时预览',
+    tabEditor: '💻 代码编辑器',
+    tabExport: '导出 Excel & CSV',
+    tabOffline: '离线整站下载 (ZIP)',
+    searchPlaceholder: '搜索锚文本或网址 URL...',
+    allTypes: '所有链接类型',
+    internalOnly: '仅站内链接',
+    externalOnly: '仅外部链接',
+    assetOnly: '文件与媒体资源',
+    anchorOnly: '页内锚点 (#)',
+    allDevices: '全部设备',
+    copySuccess: '链接已复制到剪贴板！',
+    applySuccess: '修改已成功应用并更新至实时预览！',
+    resetConfirm: '确定要将此文件重置为初始状态吗？'
+  },
+  fr: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'Extension de navigateur | Extracteur 100% hors-ligne, aperçu direct & éditeur',
+    tabLabel: 'Onglet actif dans le navigateur :',
+    detectingTab: 'Identification de l’onglet actif...',
+    modeLabel: 'Mode d’extraction :',
+    singlePage: 'Page unique',
+    allPages: 'Site complet (Multi-pages)',
+    deviceLabel: 'Appareil :',
+    btnExtract: 'Extraire la page active maintenant (0 ms)',
+    btnExtractLoading: 'Extraction directe du DOM...',
+    btnExtractCrawling: 'Exploration des liens internes...',
+    btnExtractSuccess: '✓ Extraction terminée avec succès',
+    statLinks: 'Total des liens',
+    statInternal: 'Internes',
+    statExternal: 'Externes',
+    statHeadings: 'Titres (H1-H6)',
+    statTime: 'Heure locale',
+    tabLinks: 'Liens',
+    tabHeadings: 'Titres (H1-H6)',
+    tabPreview: '👁️ Aperçu en direct',
+    tabEditor: '💻 Éditeur de code',
+    tabExport: 'Export Excel & CSV',
+    tabOffline: 'Site hors-ligne (ZIP)',
+    searchPlaceholder: 'Rechercher un texte d’ancre ou une URL...',
+    allTypes: 'Tous les types de liens',
+    internalOnly: 'Liens internes uniquement',
+    externalOnly: 'Liens externes uniquement',
+    assetOnly: 'Fichiers & Médias',
+    anchorOnly: 'Ancres de page (#)',
+    allDevices: 'Tous les appareils',
+    copySuccess: 'URL copiée dans le presse-papiers !',
+    applySuccess: 'Modifications appliquées et aperçu mis à jour avec succès !',
+    resetConfirm: 'Êtes-vous sûr de vouloir réinitialiser ce fichier ?'
+  },
+  ru: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'Браузерное расширение | 100% офлайн экстрактор, превью и редактор кода',
+    tabLabel: 'Активная вкладка в браузере:',
+    detectingTab: 'Определение активной вкладки...',
+    modeLabel: 'Режим извлечения:',
+    singlePage: 'Одна страница',
+    allPages: 'Весь сайт (Многостраничный)',
+    deviceLabel: 'Устройство:',
+    btnExtract: 'Извлечь активную страницу сейчас (0 мс)',
+    btnExtractLoading: 'Прямое извлечение DOM структуры...',
+    btnExtractCrawling: 'Сбор внутренних ссылок сайта...',
+    btnExtractSuccess: '✓ Извлечение успешно завершено',
+    statLinks: 'Всего ссылок',
+    statInternal: 'Внутренние',
+    statExternal: 'Внешние',
+    statHeadings: 'Заголовки (H1-H6)',
+    statTime: 'Местное время',
+    tabLinks: 'Ссылки',
+    tabHeadings: 'Заголовки (H1-H6)',
+    tabPreview: '👁️ Живой просмотр',
+    tabEditor: '💻 Редактор кода',
+    tabExport: 'Экспорт Excel и CSV',
+    tabOffline: 'Офлайн сайт (ZIP)',
+    searchPlaceholder: 'Поиск по анкору или URL...',
+    allTypes: 'Все типы ссылок',
+    internalOnly: 'Только внутренние',
+    externalOnly: 'Только внешние',
+    assetOnly: 'Файлы и медиа',
+    anchorOnly: 'Якоря на странице (#)',
+    allDevices: 'Все устройства',
+    copySuccess: 'Ссылка скопирована в буфер обмена!',
+    applySuccess: 'Изменения применены и превью успешно обновлено!',
+    resetConfirm: 'Вы уверены, что хотите сбросить этот файл к исходному состоянию?'
+  },
+  pt: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'Extensão de Navegador | Extrator 100% Offline, Pré-visualização e Editor',
+    tabLabel: 'Aba ativa no navegador:',
+    detectingTab: 'Identificando aba ativa...',
+    modeLabel: 'Modo de extração:',
+    singlePage: 'Página única',
+    allPages: 'Site completo (Multi-páginas)',
+    deviceLabel: 'Dispositivo:',
+    btnExtract: 'Extrair página ativa agora (0 ms)',
+    btnExtractLoading: 'Extraindo DOM diretamente...',
+    btnExtractCrawling: 'Rastreando links internos do site...',
+    btnExtractSuccess: '✓ Extração concluída com sucesso',
+    statLinks: 'Total de Links',
+    statInternal: 'Internos',
+    statExternal: 'Externos',
+    statHeadings: 'Títulos (H1-H6)',
+    statTime: 'Hora local',
+    tabLinks: 'Links',
+    tabHeadings: 'Títulos (H1-H6)',
+    tabPreview: '👁️ Pré-visualização ao vivo',
+    tabEditor: '💻 Editor de código',
+    tabExport: 'Exportar Excel e CSV',
+    tabOffline: 'Site offline (ZIP)',
+    searchPlaceholder: 'Pesquisar texto âncora ou URL...',
+    allTypes: 'Todos os tipos de link',
+    internalOnly: 'Apenas links internos',
+    externalOnly: 'Apenas links externos',
+    assetOnly: 'Arquivos e mídia',
+    anchorOnly: 'Âncoras na página (#)',
+    allDevices: 'Todos os dispositivos',
+    copySuccess: 'URL copiada para a área de transferência!',
+    applySuccess: 'Alterações aplicadas e pré-visualização atualizada com sucesso!',
+    resetConfirm: 'Tem certeza de que deseja restaurar este arquivo ao estado original?'
+  },
+  ja: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'ブラウザ拡張機能 | 100%完全オフライン抽出、ライブプレビュー＆コードエディタ',
+    tabLabel: 'ブラウザの現在のアクティブタブ:',
+    detectingTab: 'アクティブタブを識別中...',
+    modeLabel: '抽出モード:',
+    singlePage: '単一ページ',
+    allPages: 'サイト全体（複数ページ）',
+    deviceLabel: 'デバイス:',
+    btnExtract: '現在のアクティブページを今すぐ抽出（0ミリ秒）',
+    btnExtractLoading: 'DOM構造を直接抽出中...',
+    btnExtractCrawling: '内部リンクを巡回中...',
+    btnExtractSuccess: '✓ 抽出が正常に完了しました',
+    statLinks: '全リンク数',
+    statInternal: '内部リンク',
+    statExternal: '外部リンク',
+    statHeadings: '見出し (H1-H6)',
+    statTime: '現地時間',
+    tabLinks: 'リンク一覧',
+    tabHeadings: '見出し一覧 (H1-H6)',
+    tabPreview: '👁️ ライブプレビュー',
+    tabEditor: '💻 コードエディタ',
+    tabExport: 'Excel & CSV エクスポート',
+    tabOffline: 'オフラインサイト保存 (ZIP)',
+    searchPlaceholder: 'アンカーテキストまたはURLを検索...',
+    allTypes: '全リンクタイプ',
+    internalOnly: '内部リンクのみ',
+    externalOnly: '外部リンクのみ',
+    assetOnly: 'ファイル＆メディア',
+    anchorOnly: 'ページ内アンカー (#)',
+    allDevices: 'すべてのデバイス',
+    copySuccess: 'URLをクリップボードにコピーしました！',
+    applySuccess: '変更が適用され、ライブプレビューが更新されました！',
+    resetConfirm: 'このファイルを初期状態にリセットしてもよろしいですか？'
+  },
+  hi: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'ब्राउज़र एक्सटेंशन | 100% ऑफ़लाइन निष्कर्षण, लाइव पूर्वावलोकन और कोड संपादक',
+    tabLabel: 'ब्राउज़र में सक्रिय टैब:',
+    detectingTab: 'सक्रिय टैब की पहचान की जा रही है...',
+    modeLabel: 'निष्कर्षण मोड:',
+    singlePage: 'एकल पृष्ठ',
+    allPages: 'पूरी वेबसाइट (बहु-पृष्ठ)',
+    deviceLabel: 'उपकरण:',
+    btnExtract: 'सक्रिय पृष्ठ अभी निकालें (0 मिलीसेकंड)',
+    btnExtractLoading: 'सीधे DOM निकाला जा रहा है...',
+    btnExtractCrawling: 'साइट के आंतरिक लिंक खोजे जा रहे हैं...',
+    btnExtractSuccess: '✓ निष्कर्षण सफलतापूर्वक पूर्ण हुआ',
+    statLinks: 'कुल लिंक',
+    statInternal: 'आंतरिक',
+    statExternal: 'बाहरी',
+    statHeadings: 'शीर्षक (H1-H6)',
+    statTime: 'स्थानीय समय',
+    tabLinks: 'लिंक',
+    tabHeadings: 'शीर्षक (H1-H6)',
+    tabPreview: '👁️ लाइव पूर्वावलोकन',
+    tabEditor: '💻 कोड संपादक',
+    tabExport: 'एक्सेल और सीएसवी निर्यात',
+    tabOffline: 'ऑफ़लाइन वेबसाइट (ZIP)',
+    searchPlaceholder: 'एंकर टेक्स्ट या URL खोजें...',
+    allTypes: 'सभी लिंक प्रकार',
+    internalOnly: 'केवल आंतरिक लिंक',
+    externalOnly: 'केवल बाहरी लिंक',
+    assetOnly: 'फ़ाइलें और मीडिया',
+    anchorOnly: 'पृष्ठ एंकर (#)',
+    allDevices: 'सभी उपकरण',
+    copySuccess: 'URL क्लिपबोर्ड पर कॉपी हो गया!',
+    applySuccess: 'परिवर्तन लागू हुए और लाइव पूर्वावलोकन सफलतापूर्वक अपडेट हो गया!',
+    resetConfirm: 'क्या आप वाकई इस फ़ाइल को मूल स्थिति में वापस लाना चाहते हैं?'
+  },
+  it: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'Estensione Browser | Estrattore 100% Offline, Anteprima Live & Editor di Codice',
+    tabLabel: 'Scheda attiva nel browser:',
+    detectingTab: 'Identificazione scheda attiva...',
+    modeLabel: 'Modalità di estrazione:',
+    singlePage: 'Singola pagina',
+    allPages: 'Sito completo (Multi-pagina)',
+    deviceLabel: 'Dispositivo:',
+    btnExtract: 'Estrai pagina attiva adesso (0 ms)',
+    btnExtractLoading: 'Estrazione diretta del DOM...',
+    btnExtractCrawling: 'Scansione dei link interni del sito...',
+    btnExtractSuccess: '✓ Estrazione completata con successo',
+    statLinks: 'Totale Link',
+    statInternal: 'Interni',
+    statExternal: 'Esterni',
+    statHeadings: 'Intestazioni (H1-H6)',
+    statTime: 'Ora locale',
+    tabLinks: 'Link',
+    tabHeadings: 'Intestazioni (H1-H6)',
+    tabPreview: '👁️ Anteprima Live',
+    tabEditor: '💻 Editor di Codice',
+    tabExport: 'Esporta Excel e CSV',
+    tabOffline: 'Sito Offline (ZIP)',
+    searchPlaceholder: 'Cerca testo di ancoraggio o URL...',
+    allTypes: 'Tutti i tipi di link',
+    internalOnly: 'Solo link interni',
+    externalOnly: 'Solo link esterni',
+    assetOnly: 'File e media',
+    anchorOnly: 'Ancore interne (#)',
+    allDevices: 'Tutti i dispositivi',
+    copySuccess: 'URL copiato negli appunti!',
+    applySuccess: 'Modifiche applicate e anteprima aggiornata con successo!',
+    resetConfirm: 'Sei sicuro di voler ripristinare questo file allo stato originale?'
+  },
+  tr: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'Tarayıcı Eklentisi | %100 Çevrimdışı Kazıyıcı, Canlı Önizleme ve Kod Düzenleyici',
+    tabLabel: 'Tarayıcıdaki Aktif Sekme:',
+    detectingTab: 'Aktif sekme tespit ediliyor...',
+    modeLabel: 'Çıkarma Modu:',
+    singlePage: 'Tek Sayfa',
+    allPages: 'Tüm Site (Çok Sayfalı)',
+    deviceLabel: 'Cihaz:',
+    btnExtract: 'Aktif Sayfayı Şimdi Çıkar (0 ms)',
+    btnExtractLoading: 'DOM doğrudan çıkarılıyor...',
+    btnExtractCrawling: 'Site içi bağlantılar taranıyor...',
+    btnExtractSuccess: '✓ Çıkarma Başarıyla Tamamlandı',
+    statLinks: 'Toplam Bağlantı',
+    statInternal: 'Dahili',
+    statExternal: 'Harici',
+    statHeadings: 'Başlıklar (H1-H6)',
+    statTime: 'Yerel Saat',
+    tabLinks: 'Bağlantılar',
+    tabHeadings: 'Başlıklar (H1-H6)',
+    tabPreview: '👁️ Canlı Önizleme',
+    tabEditor: '💻 Kod Düzenleyici',
+    tabExport: 'Excel ve CSV Dışa Aktar',
+    tabOffline: 'Çevrimdışı Web Sitesi (ZIP)',
+    searchPlaceholder: 'Bağlantı metni veya URL ara...',
+    allTypes: 'Tüm Bağlantı Türleri',
+    internalOnly: 'Yalnızca Dahili Bağlantılar',
+    externalOnly: 'Yalnızca Harici Bağlantılar',
+    assetOnly: 'Dosyalar ve Medya',
+    anchorOnly: 'Sayfa İçi Çapalar (#)',
+    allDevices: 'Tüm Cihazlar',
+    copySuccess: 'URL panoya kopyalandı!',
+    applySuccess: 'Değişiklikler uygulandı ve canlı önizleme güncellendi!',
+    resetConfirm: 'Bu dosyayı orijinal haline sıfırlamak istediğinizden emin misiniz?'
+  },
+  ko: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: '브라우저 확장 프로그램 | 100% 오프라인 추출기, 라이브 프리뷰 및 코드 편집기',
+    tabLabel: '브라우저 활성 탭:',
+    detectingTab: '활성 브라우저 탭 확인 중...',
+    modeLabel: '추출 모드:',
+    singlePage: '단일 페이지',
+    allPages: '전체 사이트 (다중 페이지)',
+    deviceLabel: '기기:',
+    btnExtract: '활성 페이지 즉시 추출 (0 ms)',
+    btnExtractLoading: 'DOM을 직접 추출하는 중...',
+    btnExtractCrawling: '내부 링크를 크롤링하는 중...',
+    btnExtractSuccess: '✓ 추출이 성공적으로 완료되었습니다',
+    statLinks: '총 링크 수',
+    statInternal: '내부',
+    statExternal: '외부',
+    statHeadings: '제목 (H1-H6)',
+    statTime: '현지 시간',
+    tabLinks: '링크',
+    tabHeadings: '제목 (H1-H6)',
+    tabPreview: '👁️ 실시간 미리보기',
+    tabEditor: '💻 코드 편집기',
+    tabExport: 'Excel 및 CSV 내보내기',
+    tabOffline: '오프라인 웹사이트 (ZIP)',
+    searchPlaceholder: '앵커 텍스트 또는 URL 검색...',
+    allTypes: '모든 링크 유형',
+    internalOnly: '내부 링크만',
+    externalOnly: '외부 링크만',
+    assetOnly: '파일 및 미디어',
+    anchorOnly: '페이지 내부 앵커 (#)',
+    allDevices: '모든 기기',
+    copySuccess: 'URL이 클립보드에 복사되었습니다!',
+    applySuccess: '변경 사항이 적용되고 미리보기가 업데이트되었습니다!',
+    resetConfirm: '이 파일을 원래 상태로 재설정하시겠습니까?'
+  },
+  nl: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'Browser Extensie | 100% Offline Extractor, Live Voorbeeld & Code Editor',
+    tabLabel: 'Actief tabblad in browser:',
+    detectingTab: 'Actief tabblad identificeren...',
+    modeLabel: 'Extractiemodus:',
+    singlePage: 'Enkele pagina',
+    allPages: 'Volledige site (Meerdere pagina\'s)',
+    deviceLabel: 'Apparaat:',
+    btnExtract: 'Actieve pagina nu extraheren (0 ms)',
+    btnExtractLoading: 'DOM direct extraheren...',
+    btnExtractCrawling: 'Interne sitelinks crawlen...',
+    btnExtractSuccess: '✓ Extractie succesvol voltooid',
+    statLinks: 'Totaal aantal links',
+    statInternal: 'Intern',
+    statExternal: 'Extern',
+    statHeadings: 'Koppen (H1-H6)',
+    statTime: 'Lokale tijd',
+    tabLinks: 'Links',
+    tabHeadings: 'Koppen (H1-H6)',
+    tabPreview: '👁️ Live voorbeeld',
+    tabEditor: '💻 Code editor',
+    tabExport: 'Excel & CSV export',
+    tabOffline: 'Offline website (ZIP)',
+    searchPlaceholder: 'Zoek ankertekst of URL...',
+    allTypes: 'Alle linktypen',
+    internalOnly: 'Alleen interne links',
+    externalOnly: 'Alleen externe links',
+    assetOnly: 'Bestanden & Media',
+    anchorOnly: 'Pagina-ankers (#)',
+    allDevices: 'Alle apparaten',
+    copySuccess: 'URL gekopieerd naar klembord!',
+    applySuccess: 'Wijzigingen toegepast en voorbeeld bijgewerkt!',
+    resetConfirm: 'Weet u zeker dat u dit bestand wilt herstellen naar de oorspronkelijke staat?'
+  },
+  pl: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'Rozszerzenie przeglądarki | Ekstraktor 100% offline, podgląd na żywo i edytor',
+    tabLabel: 'Aktywna karta w przeglądarce:',
+    detectingTab: 'Identyfikacja aktywnej karty...',
+    modeLabel: 'Tryb ekstrakcji:',
+    singlePage: 'Pojedyncza strona',
+    allPages: 'Cała witryna (Wielostronicowa)',
+    deviceLabel: 'Urządzenie:',
+    btnExtract: 'Wyodrębnij aktywną stronę teraz (0 ms)',
+    btnExtractLoading: 'Bezpośrednie wyodrębnianie DOM...',
+    btnExtractCrawling: 'Skanowanie linków wewnętrznych...',
+    btnExtractSuccess: '✓ Ekstrakcja zakończona pomyślnie',
+    statLinks: 'Wszystkie linki',
+    statInternal: 'Wewnętrzne',
+    statExternal: 'Zewnętrzne',
+    statHeadings: 'Nagłówki (H1-H6)',
+    statTime: 'Czas lokalny',
+    tabLinks: 'Linki',
+    tabHeadings: 'Nagłówki (H1-H6)',
+    tabPreview: '👁️ Podgląd na żywo',
+    tabEditor: '💻 Edytor kodu',
+    tabExport: 'Eksport Excel i CSV',
+    tabOffline: 'Witryna offline (ZIP)',
+    searchPlaceholder: 'Szukaj tekstu zakotwiczenia lub URL...',
+    allTypes: 'Wszystkie typy linków',
+    internalOnly: 'Tylko linki wewnętrzne',
+    externalOnly: 'Tylko linki zewnętrzne',
+    assetOnly: 'Pliki i multimedia',
+    anchorOnly: 'Kotwice na stronie (#)',
+    allDevices: 'Wszystkie urządzenia',
+    copySuccess: 'URL skopiowany do schowka!',
+    applySuccess: 'Zmiany zastosowane, a podgląd pomyślnie zaktualizowany!',
+    resetConfirm: 'Czy na pewno chcesz przywrócić ten plik do stanu początkowego?'
+  },
+  id: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'Ekstensi Browser | Ekstraktor 100% Offline, Pratinjau Langsung & Editor Kode',
+    tabLabel: 'Tab aktif di browser:',
+    detectingTab: 'Mengidentifikasi tab aktif...',
+    modeLabel: 'Mode Ekstraksi:',
+    singlePage: 'Halaman Tunggal',
+    allPages: 'Seluruh Situs (Banyak Halaman)',
+    deviceLabel: 'Perangkat:',
+    btnExtract: 'Ekstrak Halaman Aktif Sekarang (0 ms)',
+    btnExtractLoading: 'Mengekstrak DOM secara langsung...',
+    btnExtractCrawling: 'Merayapi tautan internal situs...',
+    btnExtractSuccess: '✓ Ekstraksi Berhasil Diselesaikan',
+    statLinks: 'Total Tautan',
+    statInternal: 'Internal',
+    statExternal: 'Eksternal',
+    statHeadings: 'Judul (H1-H6)',
+    statTime: 'Waktu Lokal',
+    tabLinks: 'Tautan',
+    tabHeadings: 'Judul (H1-H6)',
+    tabPreview: '👁️ Pratinjau Langsung',
+    tabEditor: '💻 Editor Kode',
+    tabExport: 'Ekspor Excel & CSV',
+    tabOffline: 'Situs Web Offline (ZIP)',
+    searchPlaceholder: 'Cari teks tautan atau URL...',
+    allTypes: 'Semua Jenis Tautan',
+    internalOnly: 'Hanya Tautan Internal',
+    externalOnly: 'Hanya Tautan Eksternal',
+    assetOnly: 'Berkas & Media',
+    anchorOnly: 'Jangkar Halaman (#)',
+    allDevices: 'Semua Perangkat',
+    copySuccess: 'URL disalin ke papan klip!',
+    applySuccess: 'Perubahan diterapkan dan pratinjau berhasil diperbarui!',
+    resetConfirm: 'Apakah Anda yakin ingin mengatur ulang berkas ini ke status awal?'
+  },
+  vi: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'Tiện ích trình duyệt | Trích xuất 100% ngoại tuyến, xem trước trực tiếp & sửa mã',
+    tabLabel: 'Tab đang hoạt động trong trình duyệt:',
+    detectingTab: 'Đang nhận diện tab trình duyệt...',
+    modeLabel: 'Chế độ trích xuất:',
+    singlePage: 'Một trang đơn',
+    allPages: 'Toàn bộ trang web (Nhiều trang)',
+    deviceLabel: 'Thiết bị:',
+    btnExtract: 'Trích xuất trang hiện tại ngay (0 ms)',
+    btnExtractLoading: 'Đang trích xuất DOM trực tiếp...',
+    btnExtractCrawling: 'Đang thu thập các liên kết nội bộ...',
+    btnExtractSuccess: '✓ Trích xuất hoàn tất thành công',
+    statLinks: 'Tổng số liên kết',
+    statInternal: 'Nội bộ',
+    statExternal: 'Bên ngoài',
+    statHeadings: 'Tiêu đề (H1-H6)',
+    statTime: 'Giờ địa phương',
+    tabLinks: 'Liên kết',
+    tabHeadings: 'Tiêu đề (H1-H6)',
+    tabPreview: '👁️ Xem trước trực tiếp',
+    tabEditor: '💻 Trình sửa mã',
+    tabExport: 'Xuất Excel & CSV',
+    tabOffline: 'Tải web ngoại tuyến (ZIP)',
+    searchPlaceholder: 'Tìm kiếm văn bản neo hoặc URL...',
+    allTypes: 'Tất cả loại liên kết',
+    internalOnly: 'Chỉ liên kết nội bộ',
+    externalOnly: 'Chỉ liên kết bên ngoài',
+    assetOnly: 'Tệp & Đa phương tiện',
+    anchorOnly: 'Neo trong trang (#)',
+    allDevices: 'Tất cả thiết bị',
+    copySuccess: 'Đã sao chép URL vào khay nhớ tạm!',
+    applySuccess: 'Đã áp dụng thay đổi và cập nhật bản xem trước thành công!',
+    resetConfirm: 'Bạn có chắc chắn muốn đặt lại tệp này về trạng thái ban đầu?'
+  },
+  ur: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'براؤزر ایکسٹینشن | 100% آف لائن ایکسٹریکٹر، لائیو پیش نظارہ اور کوڈ ایڈیٹر',
+    tabLabel: 'براؤزر میں فعال ٹیب:',
+    detectingTab: 'فعال ٹیب کی شناخت ہو رہی ہے...',
+    modeLabel: 'نکالنے کا موڈ:',
+    singlePage: 'واحد صفحہ',
+    allPages: 'مکمل ویب سائٹ (کثیر صفحات)',
+    deviceLabel: 'ڈیوائس:',
+    btnExtract: 'فعال صفحہ ابھی نکالیں (0 ملی سیکنڈ)',
+    btnExtractLoading: 'براہ راست DOM نکالا جا رہا ہے...',
+    btnExtractCrawling: 'اندرونی لنکس تلاش کیے جا رہے ہیں...',
+    btnExtractSuccess: '✓ کامیابی سے نکال لیا گیا',
+    statLinks: 'کل لنکس',
+    statInternal: 'اندرونی',
+    statExternal: 'بیرونی',
+    statHeadings: 'سرخیاں (H1-H6)',
+    statTime: 'مقامی وقت',
+    tabLinks: 'لنکس',
+    tabHeadings: 'سرخیاں (H1-H6)',
+    tabPreview: '👁️ لائیو پیش نظارہ',
+    tabEditor: '💻 کوڈ ایڈیٹر',
+    tabExport: 'ایکسل اور CSV ایکسپورٹ',
+    tabOffline: 'آف لائن ویب سائٹ (ZIP)',
+    searchPlaceholder: 'اینکر ٹیکسٹ یا URL تلاش کریں...',
+    allTypes: 'تمام قسم کے لنکس',
+    internalOnly: 'صرف اندرونی لنکس',
+    externalOnly: 'صرف بیرونی لنکس',
+    assetOnly: 'فائلیں اور میڈیا',
+    anchorOnly: 'صفحے کے لنگر (#)',
+    allDevices: 'تمام آلات',
+    copySuccess: 'URL کلپ بورڈ پر کاپی ہو گیا!',
+    applySuccess: 'تبدیلیاں لاگو ہو گئیں اور پیش نظارہ اپ ڈیٹ ہو گیا!',
+    resetConfirm: 'کیا آپ واقعی اس فائل کو اصل حالت میں واپس لانا چاہتے ہیں؟'
+  },
+  bn: {
+    appTitle: 'Web Scraper Pro',
+    appSubtitle: 'ব্রাউজার এক্সটেনশন | ১০০% অফলাইন নিষ্কাশন, লাইভ প্রিভিউ ও কোড সম্পাদক',
+    tabLabel: 'ব্রাউজারে সক্রিয় ট্যাব:',
+    detectingTab: 'সক্রিয় ব্রাউজার ট্যাব শনাক্ত করা হচ্ছে...',
+    modeLabel: 'নিষ্কাশন মোড:',
+    singlePage: 'একক পৃষ্ঠা',
+    allPages: 'সম্পূর্ণ সাইট (বহু-পৃষ্ঠা)',
+    deviceLabel: 'ডিভাইস:',
+    btnExtract: 'সক্রিয় পৃষ্ঠা এখনই নিষ্কাশন করুন (০ মি.সে.)',
+    btnExtractLoading: 'সরাসরি DOM নিষ্কাশন করা হচ্ছে...',
+    btnExtractCrawling: 'অভ্যন্তরীণ লিঙ্ক ক্রল করা হচ্ছে...',
+    btnExtractSuccess: '✓ নিষ্কাশন সফলভাবে সম্পন্ন হয়েছে',
+    statLinks: 'মোট লিঙ্ক',
+    statInternal: 'অভ্যন্তরীণ',
+    statExternal: 'বাহ্যিক',
+    statHeadings: 'শিরোনাম (H1-H6)',
+    statTime: 'স্থানীয় সময়',
+    tabLinks: 'লিঙ্কসমূহ',
+    tabHeadings: 'শিরোনাম (H1-H6)',
+    tabPreview: '👁️ লাইভ প্রিভিউ',
+    tabEditor: '💻 কোড সম্পাদক',
+    tabExport: 'Excel এবং CSV রপ্তানি',
+    tabOffline: 'অফলাইন ওয়েবসাইট (ZIP)',
+    searchPlaceholder: 'অ্যাঙ্কর টেক্সট বা URL খুঁজুন...',
+    allTypes: 'সব ধরনের লিঙ্ক',
+    internalOnly: 'শুধুমাত্র অভ্যন্তরীণ লিঙ্ক',
+    externalOnly: 'শুধুমাত্র বাহ্যিক লিঙ্ক',
+    assetOnly: 'ফাইল ও মিডিয়া',
+    anchorOnly: 'পৃষ্ঠার অ্যাঙ্কর (#)',
+    allDevices: 'সকল ডিভাইস',
+    copySuccess: 'URL ক্লিপবোর্ডে কপি করা হয়েছে!',
+    applySuccess: 'পরিবর্তন প্রয়োগ করা হয়েছে এবং প্রিভিউ সফলভাবে আপডেট হয়েছে!',
+    resetConfirm: 'আপনি কি নিশ্চিত যে আপনি এই ফাইলটি আগের অবস্থায় ফিরিয়ে নিতে চান?'
   }
 };
 
@@ -559,7 +1189,7 @@ const OFFLINE_AIRGAP_SHIELD = `/* ==============================================
       var img = e.target;
       if (!img.getAttribute('data-offline-rescued')) {
         img.setAttribute('data-offline-rescued', 'true');
-        img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="180" viewBox="0 0 300 180"><rect width="300" height="180" fill="%23f1f5f9"/><path d="M110 100 L135 70 L160 100 L175 85 L200 115 Z" fill="%2394a3b8"/><circle cx="130" cy="55" r="10" fill="%23cbd5e1"/><text x="150" y="145" font-family="sans-serif" font-size="11" fill="%2364748b" text-anchor="middle">تصویر آفلاین ذخیره شده</text></svg>';
+        img.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="180" viewBox="0 0 300 180"><rect width="300" height="180" fill="%23f1f5f9"/><path d="M110 100 L135 70 L160 100 L175 85 L200 115 Z" fill="%2394a3b8"/><circle cx="130" cy="55" r="10" fill="%23cbd5e1"/><text x="150" y="145" font-family="sans-serif" font-size="11" fill="%2364748b" text-anchor="middle">Offline Asset</text></svg>';
       }
     }
   }, true);
@@ -586,7 +1216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const savedTheme = localStorage.getItem('ext_theme') || 'dark';
     setTheme(savedTheme);
 
-    const savedLang = localStorage.getItem('ext_lang') || 'fa';
+    const savedLang = localStorage.getItem('ext_lang') || 'en';
     setLanguage(savedLang);
   } catch (e) {}
 
@@ -595,28 +1225,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnExtract = document.getElementById('btn-extract-active');
   const btnFullscreen = document.getElementById('btn-fullscreen');
   const btnToggleTheme = document.getElementById('btn-toggle-theme');
-  const btnToggleLang = document.getElementById('btn-toggle-lang');
+  const selectLang = document.getElementById('select-lang');
 
   // Query active tab in browser
   try {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tabs && tabs[0]) {
       const tab = tabs[0];
-      activeTabTitle.textContent = tab.title || 'صفحه ناشناس';
+      activeTabTitle.textContent = tab.title || (currentLang === 'fa' ? 'صفحه ناشناس' : 'Unknown Page');
       activeTabUrl.textContent = tab.url || '-';
     }
   } catch (err) {
-    activeTabTitle.textContent = 'خطا در دسترسی به تب فعال';
+    activeTabTitle.textContent = currentLang === 'fa' ? 'خطا در دسترسی به تب فعال' : 'Error accessing active tab';
   }
 
-  // Header button handlers
+  // Header handlers
   btnToggleTheme.addEventListener('click', () => {
     setTheme(currentTheme === 'dark' ? 'light' : 'dark');
   });
 
-  btnToggleLang.addEventListener('click', () => {
-    setLanguage(currentLang === 'fa' ? 'en' : 'fa');
-  });
+  if (selectLang) {
+    selectLang.value = currentLang;
+    selectLang.addEventListener('change', (e) => {
+      setLanguage(e.target.value);
+    });
+  }
 
   btnFullscreen.addEventListener('click', () => {
     if (document.body.classList.contains('fullscreen')) {
@@ -758,27 +1391,28 @@ function setTheme(theme) {
   }
 }
 
-// Language Toggle
+// Language Selector Handler (All 20 Languages)
 function setLanguage(lang) {
+  if (!I18N[lang]) lang = 'en';
   currentLang = lang;
   try { localStorage.setItem('ext_lang', lang); } catch (e) {}
 
-  const indicator = document.getElementById('lang-indicator');
-  if (indicator) indicator.textContent = lang === 'fa' ? 'EN' : 'فا';
-
-  const t = I18N[lang];
-  document.documentElement.lang = lang;
-  document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
-  if (lang === 'fa') {
-    document.body.dir = 'rtl';
-  } else {
-    document.body.dir = 'ltr';
+  const selectLang = document.getElementById('select-lang');
+  if (selectLang && selectLang.value !== lang) {
+    selectLang.value = lang;
   }
+
+  const isRtl = lang === 'fa' || lang === 'ar' || lang === 'ur';
+  document.documentElement.lang = lang;
+  document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
+  document.body.dir = isRtl ? 'rtl' : 'ltr';
+
+  const t = I18N[lang] || I18N.en;
 
   // Translate labels
   const setText = (id, text) => {
     const el = document.getElementById(id);
-    if (el) el.textContent = text;
+    if (el && text) el.textContent = text;
   };
 
   setText('i18n-app-title', t.appTitle);
@@ -801,8 +1435,18 @@ function setLanguage(lang) {
   setText('i18n-tab-export', t.tabExport);
   setText('i18n-tab-offline', t.tabOffline);
 
+  // Link filter options
+  const filterType = document.getElementById('filter-link-type');
+  if (filterType && filterType.options && filterType.options.length >= 5) {
+    if (t.allTypes) filterType.options[0].text = t.allTypes;
+    if (t.internalOnly) filterType.options[1].text = t.internalOnly;
+    if (t.externalOnly) filterType.options[2].text = t.externalOnly;
+    if (t.assetOnly) filterType.options[3].text = t.assetOnly;
+    if (t.anchorOnly) filterType.options[4].text = t.anchorOnly;
+  }
+
   const searchInput = document.getElementById('search-links');
-  if (searchInput) searchInput.placeholder = t.searchPlaceholder;
+  if (searchInput && t.searchPlaceholder) searchInput.placeholder = t.searchPlaceholder;
 }
 
 // Extract Active Tab DOM and optionally crawl internal links
@@ -820,7 +1464,7 @@ async function extractActiveTab() {
   try {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tabs || !tabs[0] || !tabs[0].id) {
-      alert('تب فعالی برای استخراج یافت نشد.');
+      alert(currentLang === 'fa' ? 'تب فعالی برای استخراج یافت نشد.' : 'No active browser tab found to extract.');
       btnExtract.disabled = false;
       if (btnLabel) btnLabel.textContent = t.btnExtract;
       if (progressBox) progressBox.classList.add('hidden');
@@ -846,7 +1490,7 @@ async function extractActiveTab() {
       }
     });
   } catch (err) {
-    alert('خطا در استخراج: ' + err.message);
+    alert((currentLang === 'fa' ? 'خطا در استخراج: ' : 'Extraction error: ') + err.message);
     btnExtract.disabled = false;
     if (btnLabel) btnLabel.textContent = t.btnExtract;
     if (progressBox) progressBox.classList.add('hidden');
@@ -861,7 +1505,7 @@ async function handleExtractionData(data) {
   const t = I18N[currentLang];
 
   if (!data || !data.success) {
-    alert('استخراج محتوا امکان‌پذیر نشد.');
+    alert(currentLang === 'fa' ? 'استخراج محتوا امکان‌پذیر نشد.' : 'Could not extract page content.');
     btnExtract.disabled = false;
     if (btnLabel) btnLabel.textContent = t.btnExtract;
     if (progressBox) progressBox.classList.add('hidden');
@@ -873,19 +1517,21 @@ async function handleExtractionData(data) {
   // If Full Site Crawl mode is selected, discover and fetch internal links
   let crawledPages = [];
   if (currentMode === 'all' && data.links && data.links.length > 0) {
-    progressText.textContent = 'در حال خزش صفحات داخلی دامنه...';
+    progressText.textContent = currentLang === 'fa' ? 'در حال خزش صفحات داخلی دامنه...' : 'Crawling internal domain links...';
     const internalLinks = data.links.filter(l => l.type === 'internal' && l.url !== data.url && !l.url.includes('#'));
     const uniqueInternalUrls = Array.from(new Set(internalLinks.map(l => l.url))).slice(0, 6); // crawl top internal pages safely
 
     for (let i = 0; i < uniqueInternalUrls.length; i++) {
       const pageUrl = uniqueInternalUrls[i];
-      progressText.textContent = `در حال خزش صفحه داخلی (${i + 1}/${uniqueInternalUrls.length}): ${pageUrl.substring(0, 40)}...`;
+      progressText.textContent = currentLang === 'fa'
+        ? `در حال خزش صفحه داخلی (${i + 1}/${uniqueInternalUrls.length}): ${pageUrl.substring(0, 40)}...`
+        : `Crawling internal page (${i + 1}/${uniqueInternalUrls.length}): ${pageUrl.substring(0, 40)}...`;
       try {
         const resp = await fetch(pageUrl);
         if (resp.ok) {
           const htmlText = await resp.text();
           const doc = new DOMParser().parseFromString(htmlText, 'text/html');
-          const pageTitle = doc.title || `صفحه ${i + 1}`;
+          const pageTitle = doc.title || (currentLang === 'fa' ? `صفحه ${i + 1}` : `Page ${i + 1}`);
           crawledPages.push({
             url: pageUrl,
             title: pageTitle,
@@ -899,7 +1545,9 @@ async function handleExtractionData(data) {
   currentScrapeResult.crawledPages = crawledPages;
 
   // Build the complete offline bundle files and store in virtualFiles
-  progressText.textContent = 'در حال کامپایل استایل‌ها و راه‌اندازی سپر دفاعی آفلاین...';
+  progressText.textContent = currentLang === 'fa'
+    ? 'در حال کامپایل استایل‌ها و راه‌اندازی سپر دفاعی آفلاین...'
+    : 'Compiling styles and activating offline shield...';
   const bundled = await processAndBundleOffline(currentScrapeResult, (msg) => {
     progressText.textContent = msg;
   });
@@ -1001,16 +1649,17 @@ function cleanHtmlForPage(rawHtml, cssContent, jsContent) {
 
 // Generate visual pages hub for Full Site mode
 function generatePagesIndexHub(domain, pages) {
+  const isRtl = currentLang === 'fa' || currentLang === 'ar' || currentLang === 'ur';
   return `<!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="${currentLang}" dir="${isRtl ? 'rtl' : 'ltr'}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>فهرست صفحات استخراج‌شده سایت - ${domain}</title>
+  <title>${currentLang === 'fa' ? `فهرست صفحات استخراج‌شده سایت - ${domain}` : `Extracted Pages Index - ${domain}`}</title>
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem; margin: 0; }
     .container { max-width: 800px; margin: 0 auto; background: #1e293b; border-radius: 16px; padding: 2rem; border: 1px solid #334155; }
-    h1 { color: #38bdf8; font-size: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid #334155; padding-bottom: 1rem; }
+    h1 { color: #38bdf8; font-size: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid #334155; padding-bottom: 1rem; text-align: ${isRtl ? 'right' : 'left'}; }
     .page-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; }
     .page-item { display: flex; align-items: center; justify-content: space-between; background: #0f172a; padding: 1rem 1.25rem; border-radius: 10px; border: 1px solid #334155; }
     .page-link { color: #f8fafc; text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 0.75rem; }
@@ -1020,19 +1669,19 @@ function generatePagesIndexHub(domain, pages) {
 </head>
 <body>
   <div class="container">
-    <h1>فهرست پوشه‌بندی شده صفحات استخراج‌شده سایت: ${domain}</h1>
+    <h1>${currentLang === 'fa' ? `فهرست پوشه‌بندی شده صفحات استخراج‌شده سایت: ${domain}` : `Extracted Pages Directory: ${domain}`}</h1>
     <ul class="page-list">
       <li class="page-item">
-        <span class="page-link">📁 پوشه 00 : صفحه اصلی (Home)</span>
-        <a class="btn" href="../index.html">مشاهده صفحه اصلی</a>
+        <span class="page-link">📁 ${currentLang === 'fa' ? 'پوشه 00 : صفحه اصلی (Home)' : 'Folder 00 : Home Page'}</span>
+        <a class="btn" href="../index.html">${currentLang === 'fa' ? 'مشاهده صفحه اصلی' : 'View Home Page'}</a>
       </li>
       ${pages.map((p, index) => {
         const pageIndex = (index + 1).toString().padStart(2, '0');
         let baseSlug = (new URL(p.url).pathname.replace(/[^a-zA-Z0-9_-]/g, '_') || 'page').slice(-20);
         const folder = `${pageIndex}_${baseSlug}`;
         return `<li class="page-item">
-          <span class="page-link">📁 پوشه ${pageIndex} : ${escapeHtml(p.title)}</span>
-          <a class="btn" href="./${folder}/index.html">مشاهده صفحه</a>
+          <span class="page-link">📁 ${currentLang === 'fa' ? `پوشه ${pageIndex} : ` : `Folder ${pageIndex} : `}${escapeHtml(p.title)}</span>
+          <a class="btn" href="./${folder}/index.html">${currentLang === 'fa' ? 'مشاهده صفحه' : 'View Page'}</a>
         </li>`;
       }).join('\n      ')}
     </ul>
@@ -1057,7 +1706,7 @@ function renderLinksTable() {
   });
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">موردی با فیلتر فعلی یافت نشد.</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${currentLang === 'fa' ? 'موردی با فیلتر فعلی یافت نشد.' : 'No items match the selected filter.'}</td></tr>`;
     return;
   }
 
@@ -1071,7 +1720,7 @@ function renderLinksTable() {
         <td><span class="badge">${devTag}</span></td>
         <td><span class="badge">${l.type}</span></td>
         <td>
-          <button class="btn-icon copy-link-btn" data-url="${escapeHtml(l.url)}" title="کپی آدرس">
+          <button class="btn-icon copy-link-btn" data-url="${escapeHtml(l.url)}" title="${currentLang === 'fa' ? 'کپی آدرس' : 'Copy URL'}">
             📋
           </button>
         </td>
@@ -1097,7 +1746,7 @@ function renderHeadingsTable() {
   const filtered = currentScrapeResult.headings.filter(h => activeLevels.includes(h.level));
 
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">تیتری با فیلترهای انتخابی یافت نشد.</td></tr>';
+    tbody.innerHTML = `<tr><td colspan="3" class="empty-state">${currentLang === 'fa' ? 'تیتری با فیلترهای انتخابی یافت نشد.' : 'No headings match the selected filters.'}</td></tr>`;
     return;
   }
 
@@ -1146,11 +1795,11 @@ function updatePreviewFrameSize() {
   container.className = 'preview-frame-container dev-' + previewDevice;
 
   if (previewDevice === 'desktop') {
-    label.textContent = '1920 × 1080 (دسکتاپ)';
+    label.textContent = currentLang === 'fa' ? '1920 × 1080 (دسکتاپ)' : '1920 × 1080 (Desktop)';
   } else if (previewDevice === 'tablet') {
-    label.textContent = '768 × 1024 (تبلت)';
+    label.textContent = currentLang === 'fa' ? '768 × 1024 (تبلت)' : '768 × 1024 (Tablet)';
   } else if (previewDevice === 'mobile') {
-    label.textContent = '390 × 844 (موبایل)';
+    label.textContent = currentLang === 'fa' ? '390 × 844 (موبایل)' : '390 × 844 (Mobile)';
   }
 }
 
@@ -1512,7 +2161,9 @@ async function downloadMediaAssets(urls, onProgress, assetCache = globalOfflineA
         completed++;
         if (onProgress && (completed % 2 === 0 || completed === total)) {
           const mb = (totalBytes / (1024 * 1024)).toFixed(1);
-          onProgress(`در حال دانلود رسانه‌ها و تصاویر باکیفیت: ${completed}/${total} فایل (${mb} MB)...`);
+          onProgress(currentLang === 'fa'
+            ? `در حال دانلود رسانه‌ها و تصاویر باکیفیت: ${completed}/${total} فایل (${mb} MB)...`
+            : `Downloading media & images: ${completed}/${total} files (${mb} MB)...`);
         }
       }
     }
@@ -1588,7 +2239,9 @@ async function processAndBundleOffline(data, onProgress) {
   totalDownloadedAssetBytes = 0;
 
   // 1. Gather all asset URLs (images, videos, fonts, audio, icons)
-  onProgress('در حال شناسایی و فهرست‌کردن تمام تصاویر، وب‌پی‌ها و رسانه‌ها...');
+  onProgress(currentLang === 'fa'
+    ? 'در حال شناسایی و فهرست‌کردن تمام تصاویر، وب‌پی‌ها و رسانه‌ها...'
+    : 'Cataloging all images, WebP assets and media...');
   const assetUrlSet = new Set();
 
   if (data.mediaAssets && Array.isArray(data.mediaAssets)) {
@@ -1653,7 +2306,9 @@ async function processAndBundleOffline(data, onProgress) {
   let urlToLocalMap = new Map();
 
   if (shouldDownloadMedia && assetUrlSet.size > 0) {
-    onProgress(`در حال دانلود ${assetUrlSet.size} رسانه باکیفیت بالا...`);
+    onProgress(currentLang === 'fa'
+      ? `در حال دانلود ${assetUrlSet.size} رسانه باکیفیت بالا...`
+      : `Downloading ${assetUrlSet.size} high-resolution media assets...`);
     const { assets, urlToLocalMap: uMap, totalBytes } = await downloadMediaAssets(Array.from(assetUrlSet), onProgress);
     currentOfflineAssets = assets;
     totalDownloadedAssetBytes = totalBytes;
@@ -1661,7 +2316,9 @@ async function processAndBundleOffline(data, onProgress) {
   }
 
   // 3. Compile external styles.css (User requirement: CSS must exist externally)
-  onProgress('در حال استخراج و تجمیع استایل‌ها و فونت‌ها در styles.css...');
+  onProgress(currentLang === 'fa'
+    ? 'در حال استخراج و تجمیع استایل‌ها و فونت‌ها در styles.css...'
+    : 'Extracting and consolidating styles & fonts in styles.css...');
   let compiledCss = `/* ========================================================================
    Offline Consolidated External Stylesheet - Built by Web Scraper Pro
    100% Air-Gap Zero-Network Compliant | Zero Remote Fetch Required
@@ -1716,7 +2373,9 @@ body, button, input, textarea, select {
   }
 
   // 4. Compile scripts.js with Air-Gap Runtime Shield
-  onProgress('در حال ترکیب کدهای تعاملی و فعال‌سازی سپر دفاعی آفلاین...');
+  onProgress(currentLang === 'fa'
+    ? 'در حال ترکیب کدهای تعاملی و فعال‌سازی سپر دفاعی آفلاین...'
+    : 'Combining interactive scripts and activating offline shield...');
   let compiledJs = OFFLINE_AIRGAP_SHIELD + '\n\n/* ================= Page Interactive Scripts ================= */\n';
 
   const trackerPattern = /(googletagmanager|google-analytics|analytics\.js|recaptcha|facebook\.net|clarity\.ms|hotjar|yandex|doubleclick|pixel|cdn-cgi|rbtools|rs6\.min\.js)/i;
@@ -1743,7 +2402,9 @@ body, button, input, textarea, select {
   }
 
   // 5. Clean, sanitize and link index.html
-  onProgress('در حال پاک‌سازی تگ‌های ریموت و اتصال پکیج‌های محلی به HTML...');
+  onProgress(currentLang === 'fa'
+    ? 'در حال پاک‌سازی تگ‌های ریموت و اتصال پکیج‌های محلی به HTML...'
+    : 'Sanitizing remote tags and linking local packages to HTML...');
   const doc = parser.parseFromString(rawHtml, 'text/html');
 
   // A. Remove remote/relative stylesheets, preloads, and preconnects
@@ -1850,7 +2511,9 @@ body, button, input, textarea, select {
   const indexHtml = '<!DOCTYPE html>\n' + doc.documentElement.outerHTML;
 
   // 6. Create standalone_offline.html with COMPLETE inlining (Base64 for all assets, embedded styles & scripts)
-  onProgress('در حال ایجاد نسخه تک‌فایل مستقل با Inlining کامل تصاویر و فونت‌ها (Base64)...');
+  onProgress(currentLang === 'fa'
+    ? 'در حال ایجاد نسخه تک‌فایل مستقل با Inlining کامل تصاویر و فونت‌ها (Base64)...'
+    : 'Building standalone single-file bundle with full Base64 asset inlining...');
   const sDoc = parser.parseFromString(rawHtml, 'text/html');
   let sHead = sDoc.querySelector('head');
   if (!sHead) {
@@ -2019,7 +2682,9 @@ async function downloadOfflineZip() {
   
   const assetCount = currentOfflineAssets.length;
   const totalMb = (totalDownloadedAssetBytes / (1024 * 1024)).toFixed(1);
-  progressText.textContent = `در حال بسته‌بندی فایل‌ها (${assetCount} مدیا و تصویر، حجم تقریبی: ${totalMb} MB) در ZIP با فشرده‌سازی حداکثر...`;
+  progressText.textContent = currentLang === 'fa'
+    ? `در حال بسته‌بندی فایل‌ها (${assetCount} مدیا و تصویر، حجم تقریبی: ${totalMb} MB) در ZIP با فشرده‌سازی حداکثر...`
+    : `Packaging files (${assetCount} media & images, approx: ${totalMb} MB) into ZIP with maximum compression...`;
 
   try {
     const zip = new JSZip();
@@ -2034,55 +2699,30 @@ async function downloadOfflineZip() {
       zip.file(asset.path, asset.data);
     });
 
-    // Add comprehensive execution guide in Persian
-    zip.file('راهنمای_اجرای_آفلاین.txt', `پکیج ۱۰۰٪ آفلاین وب‌سایت (تولید شده با Web Scraper Pro)
-======================================================
-این پکیج به صورت کامل، بدون کوچک‌ترین وابستگی به اینترنت، با مشخصات زیر ایجاد شده است:
-
-۱. فایل styles.css:
-   - تمامی استایل‌ها، فونت‌ها و رنگ‌ها به صورت خارجی در این فایل تجمیع شده‌اند.
-   - هیچ‌گونه ایمپورت آنلاین (@import) یا فونت ریموت وجود ندارد.
-
-۲. پوشه assets/:
-   - تمامی تصاویر اصلی (WebP, PNG, JPG, SVG)، ویدیوها (MP4) و فایل‌های مدیا به صورت لوکال در این پوشه ذخیره شده‌اند.
-   - کل دارایی‌ها با کیفیت اورجینال درون پکیج گنجانده شده‌اند (مجموعاً ${assetCount} فایل رسانه - حجم بیش از ${totalMb} مگابایت).
-
-۳. فایل scripts.js:
-   - حاوی سپر دفاعی Air-Gap Zero-Network جهت جلوگیری از هرگونه خطای Fetch یا XHR هنگام قطع اینترنت.
-   - شامل شبیه‌ساز کامل jQuery، ابزارهای وردپرس (wp.i18n, wp.hooks)، المنتور و ووکامرس.
-
-۴. فایل index.html:
-   - صفحه وب اصلی که با ارتباط با styles.css و scripts.js به طور کامل و روان بالا می‌آید.
-   - بدون نیاز به سرور محلی؛ فقط کافیست روی index.html دابل‌کلیک کنید.
-
-۵. فایل standalone_offline.html:
-   - نسخه تک‌فایل فوق‌العاده مستقل بدون نیاز به هیچ پوشه کمکی.
-
-روش اجرا:
-کافیست روی index.html در هر مرورگری (Chrome, Edge, Firefox) دوبار کلیک کنید.
-حتی در صورت قطع کامل اتصال اینترنت، سایت به شکل بی‌نقص اجرا می‌شود.
-`);
-
     const content = await zip.generateAsync({
       type: 'blob',
       compression: 'DEFLATE',
       compressionOptions: { level: 6 }
     }, (metadata) => {
       if (metadata.percent) {
-        progressText.textContent = `در حال فشرده‌سازی ZIP: ${metadata.percent.toFixed(0)}% (${metadata.currentFile || ''})...`;
+        progressText.textContent = currentLang === 'fa'
+          ? `در حال فشرده‌سازی ZIP: ${metadata.percent.toFixed(0)}% (${metadata.currentFile || ''})...`
+          : `Compressing ZIP: ${metadata.percent.toFixed(0)}% (${metadata.currentFile || ''})...`;
       }
     });
 
     const domain = (currentScrapeResult?.domain || 'offline_website').replace(/[^a-zA-Z0-9_-]/g, '_');
     downloadBlob(content, domain + '_complete_offline_bundle.zip', 'application/zip');
 
-    progressText.textContent = `✓ بسته کامل آفلاین (${(content.size / (1024 * 1024)).toFixed(1)} MB) با موفقیت دانلود شد!`;
+    progressText.textContent = currentLang === 'fa'
+      ? `✓ بسته کامل آفلاین (${(content.size / (1024 * 1024)).toFixed(1)} MB) با موفقیت دانلود شد!`
+      : `✓ Complete offline bundle (${(content.size / (1024 * 1024)).toFixed(1)} MB) downloaded successfully!`;
     setTimeout(() => {
       progressBox.classList.add('hidden');
       btn.disabled = false;
     }, 2500);
   } catch (e) {
-    alert('خطا در ایجاد فایل ZIP: ' + e.message);
+    alert((currentLang === 'fa' ? 'خطا در ایجاد فایل ZIP: ' : 'Error generating ZIP bundle: ') + e.message);
     progressBox.classList.add('hidden');
     btn.disabled = false;
   }
@@ -2092,7 +2732,7 @@ async function downloadOfflineZip() {
 function downloadStandaloneHtml() {
   const standalone = virtualFiles.find(f => f.name === 'standalone_offline.html');
   if (!standalone) {
-    alert('فایل تک‌صفحه‌ای یافت نشد.');
+    alert(currentLang === 'fa' ? 'فایل تک‌صفحه‌ای یافت نشد.' : 'Standalone single-file bundle not found.');
     return;
   }
   const domain = (currentScrapeResult?.domain || 'offline_page').replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -2105,7 +2745,9 @@ async function downloadAllDevicesZip() {
   const progressBox = document.getElementById('offline-progress-status');
   const progressText = document.getElementById('offline-progress-text');
   progressBox.classList.remove('hidden');
-  progressText.textContent = 'در حال ایجاد ساختار پکیج ۳ دستگاه (Desktop, Tablet, Mobile)...';
+  progressText.textContent = currentLang === 'fa'
+    ? 'در حال ایجاد ساختار پکیج ۳ دستگاه (Desktop, Tablet, Mobile)...'
+    : 'Creating 3-device package bundle (Desktop, Tablet, Mobile)...';
 
   try {
     const zip = new JSZip();
@@ -2144,18 +2786,21 @@ async function downloadAllDevicesZip() {
     const content = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
     downloadBlob(content, domain + '_all_devices_bundle.zip', 'application/zip');
 
-    progressText.textContent = '✓ پکیج ۳ دستگاه با موفقیت دانلود شد!';
+    progressText.textContent = currentLang === 'fa'
+      ? '✓ پکیج ۳ دستگاه با موفقیت دانلود شد!'
+      : '✓ 3-Device package downloaded successfully!';
     setTimeout(() => { progressBox.classList.add('hidden'); }, 2000);
   } catch (e) {
-    alert('خطا در ایجاد پکیج ۳ دستگاه: ' + e.message);
+    alert((currentLang === 'fa' ? 'خطا در ایجاد پکیج ۳ دستگاه: ' : 'Error generating 3-device package: ') + e.message);
     progressBox.classList.add('hidden');
   }
 }
 
 // Generate Offline Hub Launcher for 3 devices
 function generateAllDevicesHubHtml(domain) {
+  const isRtl = currentLang === 'fa' || currentLang === 'ar' || currentLang === 'ur';
   return `<!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="${currentLang}" dir="${isRtl ? 'rtl' : 'ltr'}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2176,26 +2821,26 @@ function generateAllDevicesHubHtml(domain) {
 </head>
 <body>
   <div class="hub-container">
-    <h1>هاب اجرای آفلاین سایت: ${domain}</h1>
-    <p class="desc">نسخه اختصاصی دستگاه مورد نظر خود را برای مشاهده کاملاً آفلاین انتخاب کنید:</p>
+    <h1>${currentLang === 'fa' ? `هاب اجرای آفلاین سایت: ${domain}` : `Offline Site Hub: ${domain}`}</h1>
+    <p class="desc">${currentLang === 'fa' ? 'نسخه اختصاصی دستگاه مورد نظر خود را برای مشاهده کاملاً آفلاین انتخاب کنید:' : 'Select your target device edition to experience full offline execution:'}</p>
     <div class="devices-grid">
       <a class="card" href="./desktop/index.html">
         <div class="icon">💻</div>
-        <div class="title">نسخه دسکتاپ</div>
+        <div class="title">${currentLang === 'fa' ? 'نسخه دسکتاپ' : 'Desktop Edition'}</div>
         <div class="spec">1920 × 1080 Full HD</div>
-        <div class="btn">اجرای نسخه دسکتاپ</div>
+        <div class="btn">${currentLang === 'fa' ? 'اجرای نسخه دسکتاپ' : 'Launch Desktop'}</div>
       </a>
       <a class="card" href="./tablet/index.html">
         <div class="icon">📱</div>
-        <div class="title">نسخه تبلت</div>
+        <div class="title">${currentLang === 'fa' ? 'نسخه تبلت' : 'Tablet Edition'}</div>
         <div class="spec">768 × 1024 Tablet</div>
-        <div class="btn">اجرای نسخه تبلت</div>
+        <div class="btn">${currentLang === 'fa' ? 'اجرای نسخه تبلت' : 'Launch Tablet'}</div>
       </a>
       <a class="card" href="./mobile/index.html">
         <div class="icon">📲</div>
-        <div class="title">نسخه موبایل</div>
+        <div class="title">${currentLang === 'fa' ? 'نسخه موبایل' : 'Mobile Edition'}</div>
         <div class="spec">390 × 844 Mobile</div>
-        <div class="btn">اجرای نسخه موبایل</div>
+        <div class="btn">${currentLang === 'fa' ? 'اجرای نسخه موبایل' : 'Launch Mobile'}</div>
       </a>
     </div>
   </div>
@@ -2207,7 +2852,7 @@ function generateAllDevicesHubHtml(domain) {
 function downloadVisualReportHtml() {
   const report = virtualFiles.find(f => f.name === 'reports/links_report.html');
   if (!report) {
-    alert('گزارش تحلیلی یافت نشد.');
+    alert(currentLang === 'fa' ? 'گزارش تحلیلی یافت نشد.' : 'Analytics report not found.');
     return;
   }
   const domain = (currentScrapeResult?.domain || 'offline_site').replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -2220,13 +2865,14 @@ function generateVisualLinksReportHtml(links, headings, domain, totalTime) {
   const externalCount = links.filter(l => l.type === 'external').length;
   const assetCount = links.filter(l => l.type === 'asset').length;
   const anchorCount = links.filter(l => l.type === 'anchor').length;
+  const isRtl = currentLang === 'fa' || currentLang === 'ar' || currentLang === 'ur';
 
   return `<!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="${currentLang}" dir="${isRtl ? 'rtl' : 'ltr'}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>گزارش تحلیلی پیوندها و تیترها - ${domain}</title>
+  <title>${currentLang === 'fa' ? `گزارش تحلیلی پیوندها و تیترها - ${domain}` : `Links & Headings Report - ${domain}`}</title>
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; background: #090d16; color: #f8fafc; padding: 2rem; margin: 0; }
     .container { max-width: 1000px; margin: 0 auto; }
@@ -2236,32 +2882,32 @@ function generateVisualLinksReportHtml(links, headings, domain, totalTime) {
     .val { font-size: 1.8rem; font-weight: 800; color: #38bdf8; }
     .lbl { font-size: 0.85rem; color: #94a3b8; margin-top: 0.25rem; }
     table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; background: #151d30; border-radius: 12px; overflow: hidden; }
-    th, td { padding: 10px 14px; text-align: right; border-bottom: 1px solid #23304e; font-size: 0.85rem; }
+    th, td { padding: 10px 14px; text-align: ${isRtl ? 'right' : 'left'}; border-bottom: 1px solid #23304e; font-size: 0.85rem; }
     th { background: #1e293b; color: #94a3b8; }
     .badge { padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>📊 داشبورد تحلیلی پیوندها و تیترهای صفحه: ${domain}</h1>
-    <p style="color: #94a3b8;">زمان استخراج محلی: ${totalTime} ms | مجموع لینک‌ها: ${links.length}</p>
+    <h1>${currentLang === 'fa' ? `📊 داشبورد تحلیلی پیوندها و تیترهای صفحه: ${domain}` : `📊 Links & Headings Analytics Dashboard: ${domain}`}</h1>
+    <p style="color: #94a3b8;">${currentLang === 'fa' ? `زمان استخراج محلی: ${totalTime} ms | مجموع لینک‌ها: ${links.length}` : `Local extraction time: ${totalTime} ms | Total links: ${links.length}`}</p>
 
     <div class="stats-row">
-      <div class="card"><div class="val">${links.length}</div><div class="lbl">کل لینک‌ها</div></div>
-      <div class="card"><div class="val">${internalCount}</div><div class="lbl">لینک‌های داخلی</div></div>
-      <div class="card"><div class="val">${externalCount}</div><div class="lbl">لینک‌های خارجی</div></div>
-      <div class="card"><div class="val">${assetCount}</div><div class="lbl">فایل‌ها و مدیا</div></div>
-      <div class="card"><div class="val">${headings.length}</div><div class="lbl">کل تیترها (H1-H6)</div></div>
+      <div class="card"><div class="val">${links.length}</div><div class="lbl">${currentLang === 'fa' ? 'کل لینک‌ها' : 'Total Links'}</div></div>
+      <div class="card"><div class="val">${internalCount}</div><div class="lbl">${currentLang === 'fa' ? 'لینک‌های داخلی' : 'Internal Links'}</div></div>
+      <div class="card"><div class="val">${externalCount}</div><div class="lbl">${currentLang === 'fa' ? 'لینک‌های خارجی' : 'External Links'}</div></div>
+      <div class="card"><div class="val">${assetCount}</div><div class="lbl">${currentLang === 'fa' ? 'فایل‌ها و مدیا' : 'Files & Media'}</div></div>
+      <div class="card"><div class="val">${headings.length}</div><div class="lbl">${currentLang === 'fa' ? 'کل تیترها (H1-H6)' : 'Total Headings'}</div></div>
     </div>
 
-    <h2>جدول پیوندهای استخراج‌شده</h2>
+    <h2>${currentLang === 'fa' ? 'جدول پیوندهای استخراج‌شده' : 'Extracted Links Table'}</h2>
     <table>
       <thead>
         <tr>
           <th>#</th>
-          <th>انکر تکست</th>
-          <th>آدرس مقصد (URL)</th>
-          <th>نوع</th>
+          <th>${currentLang === 'fa' ? 'انکر تکست' : 'Anchor Text'}</th>
+          <th>${currentLang === 'fa' ? 'آدرس مقصد (URL)' : 'Destination URL'}</th>
+          <th>${currentLang === 'fa' ? 'نوع' : 'Type'}</th>
         </tr>
       </thead>
       <tbody>

@@ -7,12 +7,14 @@ import { getEmbeddedExtensionZipBlob } from './extensionZipData';
  * or corrupted download issues.
  */
 export async function downloadVerifiedExtensionZip(
-  onProgress?: (message: string) => void
+  onProgress?: (message: string) => void,
+  lang: string = 'en'
 ): Promise<{ success: boolean; size: number; filename: string }> {
   const filename = 'web-scraper-pro-extension.zip';
   let finalBlob: Blob | null = null;
 
-  onProgress?.('بررسی و آماده‌سازی بسته کامل اکستنشن...');
+  const isFa = lang === 'fa';
+  onProgress?.(isFa ? 'بررسی و آماده‌سازی بسته کامل اکستنشن...' : 'Verifying and preparing browser extension package...');
 
   // Attempt 1: Fetch through AJAX with strict MIME type & magic byte verification
   try {
@@ -52,11 +54,11 @@ export async function downloadVerifiedExtensionZip(
   // Fallback / Primary guarantee: Use the embedded 100% complete, verified binary archive
   // This completely eliminates any Cloud Run reverse-proxy redirection / cookie check interference.
   if (!finalBlob) {
-    onProgress?.('بارگذاری بسته تضمین‌شده از حافظه داخلی...');
+    onProgress?.(isFa ? 'بارگذاری بسته تضمین‌شده از حافظه داخلی...' : 'Loading verified package from local bundle...');
     finalBlob = getEmbeddedExtensionZipBlob();
   }
 
-  onProgress?.('در حال ذخیره فایل روی سیستم...');
+  onProgress?.(isFa ? 'در حال ذخیره فایل روی سیستم...' : 'Saving extension file to device...');
 
   // Trigger pure in-memory Blob download
   const blobUrl = URL.createObjectURL(finalBlob);

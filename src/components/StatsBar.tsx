@@ -111,9 +111,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({ result, language }) => {
           <div className="flex items-center justify-between gap-2 mb-3 pb-2.5 border-b border-slate-800/80 flex-wrap">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-200">
-                {language === 'fa'
-                  ? 'تفکیک دقیق داده‌های استخراج‌شده بر اساس دستگاه (شبیه‌سازی کامل)'
-                  : 'Separated Device Extraction Metrics (Full Emulation)'}
+                {t.statsDeviceMetricsTitle}
               </span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
                 Sec-CH-UA + Viewport Emulated
@@ -123,18 +121,14 @@ export const StatsBar: React.FC<StatsBarProps> = ({ result, language }) => {
               <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-amber-300 bg-amber-950/40 border border-amber-500/40 px-2.5 py-0.5 rounded-full">
                 <AlertCircle className="w-3 h-3" />
                 <span>
-                  {language === 'fa'
-                    ? 'تفاوت ساختاری میان دستگاه‌ها شناسایی شد!'
-                    : 'Device-specific responses detected!'}
+                  {t.statsDeviceDiffDetected}
                 </span>
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-300 bg-emerald-950/40 border border-emerald-500/40 px-2.5 py-0.5 rounded-full">
                 <CheckCircle className="w-3 h-3" />
                 <span>
-                  {language === 'fa'
-                    ? 'پوشش یکپارچه در تمامی دستگاه‌ها'
-                    : 'Consistent coverage across all devices'}
+                  {t.statsDeviceCoverage}
                 </span>
               </span>
             )}
@@ -146,7 +140,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({ result, language }) => {
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-1.5 font-semibold text-xs text-sky-300">
                   <Laptop className="w-4 h-4 text-sky-400" />
-                  <span>{language === 'fa' ? 'نسخه دسکتاپ' : 'Desktop Version'}</span>
+                  <span>{t.deviceDesktopVersion}</span>
                 </div>
                 <span className="text-[10px] font-mono text-slate-400">1920×1080</span>
               </div>
@@ -164,7 +158,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({ result, language }) => {
                   </div>
                 </div>
                 <div className="bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
-                  <div className="text-[10px] text-slate-400">{language === 'fa' ? 'فایل‌ها' : 'Files'}</div>
+                  <div className="text-[10px] text-slate-400">{t.filesLabel}</div>
                   <div className="text-sm font-bold text-purple-400">
                     {dv.desktop.files.length}
                   </div>
@@ -177,7 +171,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({ result, language }) => {
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-1.5 font-semibold text-xs text-amber-300">
                   <Tablet className="w-4 h-4 text-amber-400" />
-                  <span>{language === 'fa' ? 'نسخه تبلت' : 'Tablet Version'}</span>
+                  <span>{t.deviceTabletVersion}</span>
                 </div>
                 <span className="text-[10px] font-mono text-slate-400">768×1024</span>
               </div>
@@ -195,7 +189,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({ result, language }) => {
                   </div>
                 </div>
                 <div className="bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
-                  <div className="text-[10px] text-slate-400">{language === 'fa' ? 'فایل‌ها' : 'Files'}</div>
+                  <div className="text-[10px] text-slate-400">{t.filesLabel}</div>
                   <div className="text-sm font-bold text-purple-400">
                     {dv.tablet.files.length}
                   </div>
@@ -208,7 +202,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({ result, language }) => {
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-1.5 font-semibold text-xs text-rose-300">
                   <Smartphone className="w-4 h-4 text-rose-400" />
-                  <span>{language === 'fa' ? 'نسخه موبایل' : 'Mobile Version'}</span>
+                  <span>{t.deviceMobileVersion}</span>
                 </div>
                 <span className="text-[10px] font-mono text-slate-400">390×844</span>
               </div>
@@ -226,7 +220,7 @@ export const StatsBar: React.FC<StatsBarProps> = ({ result, language }) => {
                   </div>
                 </div>
                 <div className="bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
-                  <div className="text-[10px] text-slate-400">{language === 'fa' ? 'فایل‌ها' : 'Files'}</div>
+                  <div className="text-[10px] text-slate-400">{t.filesLabel}</div>
                   <div className="text-sm font-bold text-purple-400">
                     {dv.mobile.files.length}
                   </div>

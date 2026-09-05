@@ -17,6 +17,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { Language } from '../types.js';
+import { translations } from '../i18n.js';
 import { downloadVerifiedExtensionZip } from '../utils/extensionDownloader';
 
 interface ExtensionDownloadHeroProps {
@@ -36,7 +37,7 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
   const [downloadSuccess, setDownloadSuccess] = useState<boolean>(false);
   const [downloadStatusMsg, setDownloadStatusMsg] = useState<string>('');
 
-  const isFa = language === 'fa';
+  const t = translations[language];
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -48,23 +49,19 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
     if (isDownloading) return;
     setIsDownloading(true);
     setDownloadSuccess(false);
-    setDownloadStatusMsg(isFa ? 'در حال آماده‌سازی و دانلود بسته کامل (۵۶ کیلوبایت)...' : 'Preparing complete verified package (~56 KB)...');
+    setDownloadStatusMsg(t.extPreparingStatus);
 
     try {
       const res = await downloadVerifiedExtensionZip((msg) => {
         setDownloadStatusMsg(msg);
-      });
+      }, language);
       if (res.success) {
         setDownloadSuccess(true);
-        setDownloadStatusMsg(
-          isFa
-            ? `✓ دانلود کامل با موفقیت انجام شد (${Math.round(res.size / 1024)} کیلوبایت - بسته کاملاً سالم)`
-            : `✓ Downloaded successfully (${Math.round(res.size / 1024)} KB - verified complete package)`
-        );
+        setDownloadStatusMsg(t.extDownloadSuccessMsg);
       }
     } catch (err) {
       console.error('Download error:', err);
-      setDownloadStatusMsg(isFa ? 'خطا در بارگیری، لطفاً مجدداً تلاش کنید.' : 'Download error, please retry.');
+      setDownloadStatusMsg(t.extDownloadErrorMsg);
     } finally {
       setIsDownloading(false);
       setTimeout(() => {
@@ -86,36 +83,21 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-semibold mb-6 shadow-inner">
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
             <span>
-              {isFa
-                ? 'نسخه جدید افزونه مرورگر (کروم و موزیلا فایرفاکس) | Manifest V3'
-                : 'New Browser Extension (Chrome & Mozilla Firefox) | Manifest V3'}
+              {t.extHeroBadge}
             </span>
           </div>
 
           {/* Main Title */}
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight mb-4">
-            {isFa ? (
-              <>
-                دانلود اکستنشن مرورگر{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-sky-300 to-emerald-400">
-                  وب اسکرپر و استخراج آفلاین
-                </span>
-              </>
-            ) : (
-              <>
-                Download Browser Extension{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-sky-300 to-emerald-400">
-                  Web Scraper & Offline Extractor
-                </span>
-              </>
-            )}
+            {t.extHeroTitlePrefix}{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-sky-300 to-emerald-400">
+              {t.extHeroTitleHighlight}
+            </span>
           </h1>
 
           {/* Core Subtitle & Architecture Statement */}
           <p className="text-sm sm:text-base text-slate-300 max-w-2xl mb-8 leading-relaxed">
-            {isFa
-              ? 'تمامی عملیات استخراج، کشف پیوندها، ساختار تیترها (H1-H6) و تولید فایل‌های اکسل و پکیج زیپ ۱۰۰٪ بر روی سیستم خود شما در مرورگر اجرا می‌شود؛ بدون کوچک‌ترین بار روی سرور و بدون محدودیت‌های کلودفلر.'
-              : 'All link parsing, heading audits (H1-H6), structured Excel CSV generation, and offline ZIP bundling run 100% locally on your own machine. Zero server load and zero Cloudflare rate limits.'}
+            {t.extHeroSubtitle}
           </p>
 
           {/* The Single Primary Download Action */}
@@ -137,10 +119,10 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
               )}
               <span className="text-lg">
                 {isDownloading
-                  ? isFa ? 'در حال آماده‌سازی و دانلود...' : 'Downloading Package...'
+                  ? t.extBtnDownloading
                   : downloadSuccess
-                    ? isFa ? 'دانلود کامل انجام شد' : 'Download Completed'
-                    : isFa ? 'دانلود اکستنشن (نسخه کروم و موزیلا)' : 'Download Extension (Chrome & Firefox)'}
+                    ? t.extBtnCompleted
+                    : t.extBtnDownload}
               </span>
             </button>
 
@@ -168,17 +150,17 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
               </span>
               <span>•</span>
               <span className="px-2.5 py-0.5 rounded-md bg-slate-800 text-emerald-300 font-mono text-[11px] font-semibold border border-slate-700">
-                {isFa ? 'حجم واقعی: ۵۶ کیلوبایت' : 'Real Size: ~56 KB'}
+                {t.extRealSize}
               </span>
               <span>•</span>
               <span className="text-emerald-400 font-medium">
-                {isFa ? '۱۰۰٪ کامل و آماده نصب (Unpacked)' : '100% Complete & Unpacked'}
+                {t.extStatusUnpacked}
               </span>
             </div>
           </div>
 
           {/* Quick Architecture Benefit Badges */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full mt-10 pt-10 border-t border-slate-800/80 text-right">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full mt-10 pt-10 border-t border-slate-800/80 text-left">
             {/* Benefit 1 */}
             <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-start gap-3.5 hover:border-indigo-500/30 transition">
               <div className="p-2 rounded-xl bg-indigo-500/15 text-indigo-400 shrink-0">
@@ -186,12 +168,10 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
               </div>
               <div>
                 <h4 className="font-bold text-sm text-slate-200 mb-1">
-                  {isFa ? 'حذف ۱۰۰٪ فشار سرور' : '100% Client-Side'}
+                  {t.extBenefit1Title}
                 </h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  {isFa
-                    ? 'تمامی ورکرها و عملیات با پردازنده و حافظه رایانه شما اجرا می‌شوند.'
-                    : 'Workers run using your own browser runtime with zero backend resource consumption.'}
+                  {t.extBenefit1Desc}
                 </p>
               </div>
             </div>
@@ -203,12 +183,10 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
               </div>
               <div>
                 <h4 className="font-bold text-sm text-slate-200 mb-1">
-                  {isFa ? 'بدون خطای ۵۰۳ و محدودیت' : 'Zero 503 & Rate Limits'}
+                  {t.extBenefit2Title}
                 </h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  {isFa
-                    ? 'بدون سقف ۵۰ ساب‌ریکوئست کلودفلر؛ هر تعداد پیوند بدون محدودیت استخراج می‌شود.'
-                    : 'Bypass Cloudflare worker subrequest limits and proxy timeout bottlenecks.'}
+                  {t.extBenefit2Desc}
                 </p>
               </div>
             </div>
@@ -220,12 +198,10 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
               </div>
               <div>
                 <h4 className="font-bold text-sm text-slate-200 mb-1">
-                  {isFa ? 'استخراج مستقیم DOM زنده' : 'Live DOM Extraction'}
+                  {t.extBenefit3Title}
                 </h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  {isFa
-                    ? 'نیازی به شبیه‌ساز نیست؛ کدهای رندرشده، صفحات SPA و استایل‌ها مستقیماً خوانده می‌شوند.'
-                    : 'Access live hydrated React/Vue DOM and real computed styles with no headless emulator.'}
+                  {t.extBenefit3Desc}
                 </p>
               </div>
             </div>
@@ -237,12 +213,10 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
               </div>
               <div>
                 <h4 className="font-bold text-sm text-slate-200 mb-1">
-                  {isFa ? 'پشتیبانی از صفحات لاگین' : 'Authenticated Pages'}
+                  {t.extBenefit4Title}
                 </h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  {isFa
-                    ? 'امکان استخراج داشبوردها و صفحات خصوصی حساب شما با نشست فعال مرورگر.'
-                    : 'Extract private logged-in portals and internal accounts safely using your session.'}
+                  {t.extBenefit4Desc}
                 </p>
               </div>
             </div>
@@ -256,12 +230,10 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
           <div>
             <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
               <HelpCircle className="w-5 h-5 text-indigo-400" />
-              <span>{isFa ? 'راهنمای گام‌به‌گام نصب در مرورگر' : 'Step-by-Step Installation Guide'}</span>
+              <span>{t.extGuideTitle}</span>
             </h3>
             <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              {isFa
-                ? 'فقط ۳ مرحله ساده در کمتر از ۳۰ ثانیه برای فعال‌سازی کامل در کروم و فایرفاکس:'
-                : 'Follow these 3 simple steps in under 30 seconds to load the extension into your browser:'}
+              {t.extGuideDesc}
             </p>
           </div>
 
@@ -297,20 +269,18 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
 
         {/* Tab 1: Chrome / Edge / Brave / Opera Instructions */}
         {activeBrowserTab === 'chrome' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
             {/* Step 1 */}
             <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800/80 relative flex flex-col justify-between">
               <div>
                 <div className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-sm mb-3">
-                  ۱
+                  1
                 </div>
                 <h4 className="font-bold text-sm text-slate-200 mb-1.5">
-                  {isFa ? 'استخراج فایل فشرده (Unzip)' : 'Extract ZIP Archive'}
+                  {t.extStep1TitleChrome}
                 </h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  {isFa
-                    ? 'فایل دانلودی (web-scraper-pro-extension.zip) را باز کرده و محتویات آن را با راست‌کلیک و انتخاب Extract All در یک پوشه قرار دهید.'
-                    : 'Unpack the downloaded web-scraper-pro-extension.zip into a permanent folder on your computer.'}
+                  {t.extStep1DescChrome}
                 </p>
               </div>
             </div>
@@ -319,22 +289,20 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
             <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800/80 relative flex flex-col justify-between">
               <div>
                 <div className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-sm mb-3">
-                  ۲
+                  2
                 </div>
                 <h4 className="font-bold text-sm text-slate-200 mb-1.5">
-                  {isFa ? 'باز کردن بخش افزونه‌ها و Developer mode' : 'Open Extensions & Developer mode'}
+                  {t.extStep2TitleChrome}
                 </h4>
                 <p className="text-xs text-slate-400 leading-relaxed mb-3">
-                  {isFa
-                    ? 'در نوار آدرس مرورگر آدرس زیر را وارد کنید و کلید Developer mode (بالا راست) را فعال کنید:'
-                    : 'Open the following internal page in Chrome and toggle on "Developer mode" in the top right:'}
+                  {t.extStep2DescChrome}
                 </p>
                 <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-900 border border-slate-800 font-mono text-xs text-sky-300">
                   <span className="truncate">chrome://extensions</span>
                   <button
                     onClick={() => handleCopy('chrome://extensions')}
                     className="p-1 text-slate-400 hover:text-white transition cursor-pointer"
-                    title={isFa ? 'کپی آدرس' : 'Copy'}
+                    title={copiedUrl === 'chrome://extensions' ? t.extCopiedBtn : t.extCopyBtn}
                   >
                     {copiedUrl === 'chrome://extensions' ? (
                       <Check className="w-3.5 h-3.5 text-emerald-400" />
@@ -350,15 +318,13 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
             <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800/80 relative flex flex-col justify-between">
               <div>
                 <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-sm mb-3">
-                  ۳
+                  3
                 </div>
                 <h4 className="font-bold text-sm text-slate-200 mb-1.5">
-                  {isFa ? 'کلیک روی Load unpacked' : 'Click "Load unpacked"'}
+                  {t.extStep3TitleChrome}
                 </h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  {isFa
-                    ? 'در گوشه بالا سمت چپ روی دکمه Load unpacked کلیک کنید و پوشه استخراج‌شده را انتخاب کنید. افزونه فوراً فعال می‌شود!'
-                    : 'Click "Load unpacked" in the top left and select the unzipped directory. The extension is now instantly ready!'}
+                  {t.extStep3DescChrome}
                 </p>
               </div>
             </div>
@@ -367,20 +333,18 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
 
         {/* Tab 2: Firefox Instructions */}
         {activeBrowserTab === 'firefox' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
             {/* Step 1 */}
             <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800/80 relative flex flex-col justify-between">
               <div>
                 <div className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-sm mb-3">
-                  ۱
+                  1
                 </div>
                 <h4 className="font-bold text-sm text-slate-200 mb-1.5">
-                  {isFa ? 'استخراج فایل زیپ' : 'Unzip the Archive'}
+                  {t.extStep1TitleFirefox}
                 </h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  {isFa
-                    ? 'فایل web-scraper-pro-extension.zip را در یک پوشه از حالت فشرده خارج کنید.'
-                    : 'Extract the contents of web-scraper-pro-extension.zip into a local folder.'}
+                  {t.extStep1DescFirefox}
                 </p>
               </div>
             </div>
@@ -389,22 +353,20 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
             <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800/80 relative flex flex-col justify-between">
               <div>
                 <div className="w-8 h-8 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center font-bold text-sm mb-3">
-                  ۲
+                  2
                 </div>
                 <h4 className="font-bold text-sm text-slate-200 mb-1.5">
-                  {isFa ? 'باز کردن دیباگ فایرفاکس' : 'Open Firefox Debugging'}
+                  {t.extStep2TitleFirefox}
                 </h4>
                 <p className="text-xs text-slate-400 leading-relaxed mb-3">
-                  {isFa
-                    ? 'در نوار آدرس فایرفاکس عبارت زیر را وارد کرده و Enter بزنید:'
-                    : 'Navigate to Firefox internal add-on debugging page:'}
+                  {t.extStep2DescFirefox}
                 </p>
                 <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-900 border border-slate-800 font-mono text-xs text-sky-300">
                   <span className="truncate">about:debugging#/runtime/this-firefox</span>
                   <button
                     onClick={() => handleCopy('about:debugging#/runtime/this-firefox')}
                     className="p-1 text-slate-400 hover:text-white transition cursor-pointer"
-                    title={isFa ? 'کپی آدرس' : 'Copy'}
+                    title={copiedUrl === 'about:debugging#/runtime/this-firefox' ? t.extCopiedBtn : t.extCopyBtn}
                   >
                     {copiedUrl === 'about:debugging#/runtime/this-firefox' ? (
                       <Check className="w-3.5 h-3.5 text-emerald-400" />
@@ -420,15 +382,13 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
             <div className="p-5 rounded-2xl bg-slate-950/60 border border-slate-800/80 relative flex flex-col justify-between">
               <div>
                 <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-bold text-sm mb-3">
-                  ۳
+                  3
                 </div>
                 <h4 className="font-bold text-sm text-slate-200 mb-1.5">
-                  {isFa ? 'انتخاب Load Temporary Add-on' : 'Load Temporary Add-on'}
+                  {t.extStep3TitleFirefox}
                 </h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  {isFa
-                    ? 'روی دکمه Load Temporary Add-on کلیک کرده و فایل manifest.json درون پوشه اکستنشن را انتخاب کنید.'
-                    : 'Click "Load Temporary Add-on..." and select the manifest.json file inside the extension folder.'}
+                  {t.extStep3DescFirefox}
                 </p>
               </div>
             </div>
@@ -437,19 +397,17 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
       </section>
 
       {/* Interactive Toggle for the In-Browser Extension Workspace */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-indigo-500/20 shadow-lg">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-indigo-500/20 shadow-lg text-left">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 shrink-0">
             <Play className="w-4 h-4" />
           </div>
           <div>
             <h4 className="font-bold text-sm text-white">
-              {isFa ? 'پیش‌نمایش زنده امکانات اکستنشن در مرورگر' : 'Live In-Browser Extension Simulator'}
+              {t.extSimTitle}
             </h4>
             <p className="text-xs text-slate-400 mt-0.5">
-              {isFa
-                ? 'مشاهده تمام قابلیت‌هایی که پس از نصب اکستنشن در مرورگر دریافت می‌کنید (جدول پیوندها، تیترهای H1-H6، اکسل و بسته آفلاین)'
-                : 'Preview the full workspace (Links table, H1-H6 headings, structured Excel CSV, and offline ZIP packager) directly here.'}
+              {t.extSimDesc}
             </p>
           </div>
         </div>
@@ -465,9 +423,7 @@ export const ExtensionDownloadHero: React.FC<ExtensionDownloadHeroProps> = ({
         >
           <Layers className="w-4 h-4" />
           <span>
-            {isPreviewOpen
-              ? isFa ? 'بستن پیش‌نمایش محیط اکستنشن' : 'Collapse Workspace Simulator'
-              : isFa ? 'مشاهده و تست محیط کار اکستنشن' : 'Test & Preview Extension Workspace'}
+            {isPreviewOpen ? t.extSimClose : t.extSimOpen}
           </span>
         </button>
       </div>

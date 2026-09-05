@@ -96,27 +96,23 @@ export const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-slate-200 text-xs font-semibold border border-white/10 backdrop-blur-md transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] focus:outline-none focus:ring-2 focus:ring-indigo-500/60 cursor-pointer active:scale-[0.98]"
             title={
               theme === 'light'
-                ? language === 'fa'
-                  ? 'تغییر به حالت تاریک'
-                  : 'Switch to Dark Mode'
-                : language === 'fa'
-                ? 'تغییر به حالت روشن'
-                : 'Switch to Light Mode'
+                ? t.themeSwitchToDark
+                : t.themeSwitchToLight
             }
-            aria-label={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+            aria-label={theme === 'light' ? t.themeSwitchToDark : t.themeSwitchToLight}
           >
             {theme === 'light' ? (
               <>
                 <Sun className="w-4 h-4 text-amber-400 shrink-0" />
                 <span className="font-medium hidden sm:inline">
-                  {language === 'fa' ? 'روشن' : 'Light'}
+                  {t.themeLight}
                 </span>
               </>
             ) : (
               <>
                 <Moon className="w-4 h-4 text-indigo-400 shrink-0" />
                 <span className="font-medium hidden sm:inline">
-                  {language === 'fa' ? 'تاریک' : 'Dark'}
+                  {t.themeDark}
                 </span>
               </>
             )}
@@ -199,7 +195,7 @@ export const Header: React.FC<HeaderProps> = ({
                             <span className="inline-flex items-center justify-center shrink-0 drop-shadow-sm">
                               <CountryFlag language={item.code} size="sm" />
                             </span>
-                            <div className="text-left rtl:text-right min-w-0">
+                            <div className="text-left min-w-0">
                               <div className="truncate font-medium">{item.nativeName}</div>
                               <div className="text-[10px] text-slate-400 truncate opacity-80">
                                 {item.name}

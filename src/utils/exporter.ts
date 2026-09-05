@@ -1,6 +1,5 @@
 import JSZip from 'jszip';
 import { ExtractedFile, ScrapedLink, ScrapedHeading, HeadingLevel, CrawlMode, DeviceType, DeviceVersion } from '../types.js';
-import { OFFLINE_GUIDES } from '../i18n/offlineGuides.js';
 
 export function formatBytes(bytes: number, decimals = 2): string {
   if (!bytes || bytes === 0) return '0 B';
@@ -82,24 +81,6 @@ export async function downloadZip(
     for (const file of otherFiles) {
       zip.file(file.name, file.content);
     }
-
-    // Clear execution guide
-    zip.file(
-      'راهنمای_اجرای_آفلاین.txt',
-      `پکیج آفلاین تک‌صفحه وب‌سایت
-=============================
-این پکیج شامل فایل‌های کامل زیر است:
-
-۱. index.html    : فایل اصلی صفحه وب (HTML) با لینک مستقیم به فایل استایل
-۲. styles.css    : کدهای کامل استایل و قالب (CSS سالم و ۱۰۰٪ آفلاین)
-۳. scripts.js    : کدهای پردازشی و اسکریپت‌ها (JS)
-۴. standalone_offline.html : نسخه تک‌فایل مستقل ۱۰۰٪ آفلاین (بدون نیاز به فایل جانبی)
-
-روش اجرا:
-کافیست روی فایل index.html دوبار کلیک کنید تا صفحه با استایل‌های کامل CSS و اسکریپت‌ها به صورت ۱۰۰٪ آفلاین اجرا شود.
-گزارشات لینک‌ها در پوشه reports قرار دارند.
-`
-    );
   } else {
     // Multi-page crawl mode ('all'): Maintain dedicated, separated folder structure for each page/link
     const stylesFile = files.find((f) => f.name === 'styles.css');
@@ -146,13 +127,13 @@ export async function downloadZip(
 
     // 3. Dedicated visual Page Directory (pages/index.html) to navigate all separated links
     const pagesDirectoryHtml = `<!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>فهرست صفحات استخراج‌شده سایت</title>
+  <title>Extracted Pages Directory</title>
   <style>
-    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem; margin: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; padding: 2rem; margin: 0; direction: ltr; text-align: left; }
     .container { max-width: 800px; margin: 0 auto; background: #1e293b; border-radius: 16px; padding: 2rem; border: 1px solid #334155; }
     h1 { color: #38bdf8; font-size: 1.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid #334155; padding-bottom: 1rem; }
     .page-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.75rem; }
@@ -164,7 +145,7 @@ export async function downloadZip(
 </head>
 <body>
   <div class="container">
-    <h1>فهرست پوشه‌بندی شده صفحات استخراج‌شده سایت</h1>
+    <h1>Extracted Pages Directory</h1>
     <ul class="page-list">
       ${htmlPages
         .map((file, index) => {
@@ -173,14 +154,14 @@ export async function downloadZip(
           if (baseSlug === 'index' || index === 0) baseSlug = 'home';
           const folder = `${pageIndex}_${baseSlug}`;
           return `<li class="page-item">
-            <span class="page-link">📁 پوشه ${pageIndex} : ${baseSlug}</span>
-            <a class="btn" href="./${folder}/index.html">مشاهده صفحه</a>
+            <span class="page-link">📁 Folder ${pageIndex} : ${baseSlug}</span>
+            <a class="btn" href="./${folder}/index.html">View Page</a>
           </li>`;
         })
         .join('\n      ')}
     </ul>
     <p style="margin-top: 2rem; font-size: 0.85rem; color: #94a3b8; text-align: center;">
-      تمامی لینک‌ها و صفحات سایت در پوشه‌های مجزا همراه با فایل‌های کامل CSS و JS ذخیره شده‌اند.
+      All pages and extracted links have been packaged into structured folders with full local CSS and JS assets.
     </p>
   </div>
 </body>
@@ -198,35 +179,6 @@ export async function downloadZip(
       const cleanName = report.name.replace(/^.*[\\/]/, '');
       zip.file(`reports/${cleanName}`, report.content);
     }
-
-    // 5. Full site guide
-    zip.file(
-      'راهنمای_ساختار_فولدرها.txt',
-      `پکیج آفلاین کامل سایت (Full Site) با تفکیک پوشه‌بندی لینک‌ها
-=========================================================
-در این پکیج، تمامی لینک‌ها و صفحات سایت به صورت منظم در پوشه‌های مجزا تفکیک شده‌اند:
-
-📁 ساختار پوشه‌بندی:
-├── index.html                    <-- صفحه اصلی سایت
-├── styles.css                    <-- فایل استایل کامل (CSS)
-├── scripts.js                    <-- فایل کدهای اسکریپت (JS)
-│
-├── pages/                        <-- پوشه تفکیک اختصاصی تمام لینک‌ها و صفحات
-│   ├── index.html                <-- فهرست و منوی راهنمای تمام صفحات
-│   ├── 01_home/                  <-- پوشه صفحه اصلی (شامل html, css, js)
-│   ├── 02_about/                 <-- پوشه لینک دوم
-│   └── ...                       <-- سایر لینک‌های استخراج‌شده
-│
-└── reports/                      <-- پوشه گزارشات لینک‌ها و تیترها
-    ├── links_report.html         <-- گزارش گرافیکی تمام لینک‌ها
-    ├── links.json                <-- داده‌های خروجی لینک‌ها
-    └── headings.json             <-- داده‌های ساختار تیترها
-
-روش اجرا:
-- برای اجرای سایت اصلی: روی index.html در ریشه پکیج کلیک کنید.
-- برای مشاهده صفحات تفکیک‌شده: وارد پوشه pages شوید و index.html را باز کنید یا پوشه هر صفحه را بررسی نمایید.
-`
-    );
   }
 
   // Maximum ZIP compression (DEFLATE level 9)

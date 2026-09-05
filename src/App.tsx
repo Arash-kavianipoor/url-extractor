@@ -30,7 +30,7 @@ import { updateDocumentSeo } from './seo/seoManager.js';
 import { SEO_LANGUAGES } from './seo/seoConfig.js';
 
 export default function App() {
-  // Initialize language from URL query (?lang=xx), or localStorage, or default 'fa'
+  // Initialize language from URL query (?lang=xx), or localStorage, or default 'en'
   const [language, setLanguage] = useState<Language>(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -45,7 +45,7 @@ export default function App() {
     } catch {
       // ignore
     }
-    return 'fa';
+    return 'en';
   });
 
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -145,10 +145,7 @@ export default function App() {
         } else {
           // Cloudflare HTML error pages (e.g., 503 Worker subrequest/CPU limit)
           if (response.status === 503) {
-            errMessage =
-              language === 'fa'
-                ? 'خطای ۵۰۳ سرویس کلودفلر: ورکر به محدودیت ۵۰ ریکوئست یا زمان پردازش CPU رسید یا سایت هدف دسترسی ربات را مسدود کرده است.'
-                : 'Cloudflare 503 Service Unavailable: The worker exceeded subrequest/CPU limits or the target site blocked access.';
+            errMessage = t.errorCloudflareRateLimit;
           } else {
             errMessage = `HTTP ${response.status} (${response.statusText || 'Server Error'})`;
           }
@@ -217,7 +214,7 @@ export default function App() {
     const devFiles = result.deviceVersions?.[selectedDevice]?.files || editedFiles;
     const ok = downloadSingleFileStandalone(devFiles, result.domain || 'website', selectedDevice);
     if (!ok) {
-      alert('فایل تک‌فایل مستقل آفلاین یافت نشد.');
+      alert(language === 'fa' ? 'فایل تک‌فایل مستقل آفلاین یافت نشد.' : 'Standalone offline single file not found.');
     }
   };
 
@@ -543,7 +540,7 @@ export default function App() {
               {t.emptyStateDesc}
             </p>
 
-            <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto ${isRtl ? 'text-right' : 'text-left'}`}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto text-left">
               <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/50 flex flex-col justify-between hover:border-slate-700 transition-colors">
                 <div className="flex items-center gap-2 font-semibold text-xs text-slate-200 mb-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />

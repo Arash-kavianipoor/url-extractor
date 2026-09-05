@@ -443,14 +443,10 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                 setIsCsvModalOpen(true);
               }}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-emerald-500/50 bg-emerald-950/50 hover:bg-emerald-900/70 text-emerald-300 transition cursor-pointer shadow-sm shadow-emerald-950/50"
-              title={
-                language === 'fa'
-                  ? 'خروجی فایل اکسل و CSV ساختاریافته (شامل لینک‌ها و تیترها)'
-                  : 'Export structured CSV dataset with links and headings'
-              }
+              title={t.exportStructuredCsvTitle}
             >
               <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{language === 'fa' ? 'خروجی ساختاریافته CSV' : 'Export Structured CSV'}</span>
+              <span>{t.exportStructuredCsvBtn}</span>
               <SlidersHorizontal className="w-3 h-3 text-emerald-400/70" />
             </button>
 
@@ -460,10 +456,10 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                 id="export-csv-btn"
                 onClick={() => exportLinksToCsv(filteredLinks)}
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
-                title={language === 'fa' ? 'دانلود سریع CSV لینک‌ها' : 'Quick download links CSV'}
+                title={t.quickDownloadLinksCsv}
               >
                 <Download className="w-3 h-3 text-emerald-400" />
-                <span className="hidden sm:inline">{language === 'fa' ? 'سریع' : 'Quick'}</span>
+                <span className="hidden sm:inline">{t.quickWord}</span>
                 <span>CSV</span>
               </button>
             ) : (
@@ -471,10 +467,10 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                 id="export-headings-csv-btn"
                 onClick={() => exportHeadingsToCsv(filteredHeadings)}
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
-                title={language === 'fa' ? 'دانلود سریع CSV تیترها' : 'Quick download headings CSV'}
+                title={t.quickDownloadHeadingsCsv}
               >
                 <Download className="w-3 h-3 text-rose-400" />
-                <span className="hidden sm:inline">{language === 'fa' ? 'سریع' : 'Quick'}</span>
+                <span className="hidden sm:inline">{t.quickWord}</span>
                 <span>CSV</span>
               </button>
             )}
@@ -501,7 +497,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
         {/* Multi-Device Filter Bar */}
         <div className="flex items-center gap-2 p-1.5 bg-slate-950/70 border border-slate-800 rounded-xl flex-wrap">
           <span className="text-[11px] font-semibold text-slate-400 px-2 flex items-center gap-1">
-            {language === 'fa' ? 'فیلتر بر اساس دستگاه:' : 'Device Filter:'}
+            {t.deviceFilterLabel}
           </span>
           <button
             onClick={() => {
@@ -515,7 +511,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
-            <span>{language === 'fa' ? 'همه دستگاه‌ها' : 'All Devices'}</span>
+            <span>{t.allDevicesLabel}</span>
             <span className="text-[10px] font-mono px-1 rounded bg-slate-900 text-slate-300">
               {activeSection === 'links' ? deviceLinkCounts.all : deviceHeadingCounts.all}
             </span>
@@ -534,7 +530,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
             }`}
           >
             <Laptop className="w-3.5 h-3.5 text-sky-400" />
-            <span>{language === 'fa' ? 'دسکتاپ' : 'Desktop'}</span>
+            <span>{t.deviceDesktop}</span>
             <span className="text-[10px] font-mono px-1 rounded bg-slate-900 text-sky-300">
               {activeSection === 'links' ? deviceLinkCounts.desktop : deviceHeadingCounts.desktop}
             </span>
@@ -553,7 +549,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
             }`}
           >
             <Tablet className="w-3.5 h-3.5 text-amber-400" />
-            <span>{language === 'fa' ? 'تبلت' : 'Tablet'}</span>
+            <span>{t.deviceTablet}</span>
             <span className="text-[10px] font-mono px-1 rounded bg-slate-900 text-amber-300">
               {activeSection === 'links' ? deviceLinkCounts.tablet : deviceHeadingCounts.tablet}
             </span>
@@ -572,7 +568,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
             }`}
           >
             <Smartphone className="w-3.5 h-3.5 text-rose-400" />
-            <span>{language === 'fa' ? 'موبایل' : 'Mobile'}</span>
+            <span>{t.deviceMobile}</span>
             <span className="text-[10px] font-mono px-1 rounded bg-slate-900 text-rose-300">
               {activeSection === 'links' ? deviceLinkCounts.mobile : deviceHeadingCounts.mobile}
             </span>
@@ -704,7 +700,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                   <th className="py-3 px-3.5 min-w-[280px]">{t.colUrl}</th>
                   <th className="py-3 px-3.5 w-24 text-center">{t.colType}</th>
                   <th className="py-3 px-3.5 min-w-[140px] text-center">
-                    {language === 'fa' ? 'دستگاه‌ها' : 'Devices'}
+                    {t.colDevices}
                   </th>
                   <th className="py-3 px-3.5 min-w-[160px] hidden md:table-cell">{t.colSource}</th>
                   <th className="py-3 px-3.5 w-20 text-center">{t.colActions}</th>
@@ -760,22 +756,16 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                               {dev === 'mobile' && <Smartphone className="w-2.5 h-2.5" />}
                               <span className="capitalize">
                                 {dev === 'desktop'
-                                  ? language === 'fa'
-                                    ? 'دسکتاپ'
-                                    : 'Desktop'
+                                  ? t.deviceDesktop
                                   : dev === 'tablet'
-                                  ? language === 'fa'
-                                    ? 'تبلت'
-                                    : 'Tablet'
-                                  : language === 'fa'
-                                  ? 'موبایل'
-                                  : 'Mobile'}
+                                  ? t.deviceTablet
+                                  : t.deviceMobile}
                               </span>
                             </span>
                           ))}
                           {linkDevs.length === 1 && (
                             <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                              {language === 'fa' ? 'اختصاصی' : 'Exclusive'}
+                              {t.deviceExclusiveBadge}
                             </span>
                           )}
                         </div>
@@ -829,7 +819,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                   <th className="py-3 px-3.5 w-20 text-center">{t.colHeadingLevel}</th>
                   <th className="py-3 px-3.5 min-w-[280px]">{t.colHeadingText}</th>
                   <th className="py-3 px-3.5 min-w-[140px] text-center">
-                    {language === 'fa' ? 'دستگاه‌ها' : 'Devices'}
+                    {t.colDevices}
                   </th>
                   <th className="py-3 px-3.5 min-w-[180px] hidden md:table-cell">{t.colSource}</th>
                   <th className="py-3 px-3.5 w-20 text-center">{t.colActions}</th>
@@ -889,22 +879,16 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                               {dev === 'mobile' && <Smartphone className="w-2.5 h-2.5" />}
                               <span className="capitalize">
                                 {dev === 'desktop'
-                                  ? language === 'fa'
-                                    ? 'دسکتاپ'
-                                    : 'Desktop'
+                                  ? t.deviceDesktop
                                   : dev === 'tablet'
-                                  ? language === 'fa'
-                                    ? 'تبلت'
-                                    : 'Tablet'
-                                  : language === 'fa'
-                                  ? 'موبایل'
-                                  : 'Mobile'}
+                                  ? t.deviceTablet
+                                  : t.deviceMobile}
                               </span>
                             </span>
                           ))}
                           {headingDevs.length === 1 && (
                             <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                              {language === 'fa' ? 'اختصاصی' : 'Exclusive'}
+                              {t.deviceExclusiveBadge}
                             </span>
                           )}
                         </div>
@@ -1145,18 +1129,14 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                 <div>
                   <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
                     <span>
-                      {language === 'fa'
-                        ? 'خروجی فایل اکسل و CSV ساختاریافته'
-                        : 'Structured CSV Dataset Export'}
+                      {t.csvModalTitle}
                     </span>
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
                       UTF-8 BOM
                     </span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                    {language === 'fa'
-                      ? 'انتخاب نحوه ترکیب و ساختاردهی لینک‌ها و تیترهای استخراج‌شده جهت استفاده در Excel، Google Sheets و پردازش داده.'
-                      : 'Export extracted links and headings into a normalized, RFC-4180 structured CSV dataset optimized for Excel, Google Sheets, and data pipelines.'}
+                    {t.csvModalDesc}
                   </p>
                 </div>
               </div>
@@ -1172,9 +1152,9 @@ export const LinksTable: React.FC<LinksTableProps> = ({
             {/* Step 1: Export Target Selection (3 Options) */}
             <div className="space-y-2">
               <label className="text-xs font-semibold text-slate-300 flex items-center justify-between">
-                <span>{language === 'fa' ? '۱. فرمت و ساختار خروجی:' : '1. Export Structure & Content:'}</span>
+                <span>{t.csvStep1Title}</span>
                 <span className="text-[11px] text-emerald-400 font-mono">
-                  {estimatedCsvRows} {language === 'fa' ? 'سطر تخمینی' : 'rows estimated'}
+                  {estimatedCsvRows} {t.csvEstimatedRows}
                 </span>
               </label>
 
@@ -1183,7 +1163,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                 <button
                   type="button"
                   onClick={() => setCsvExportTarget('combined')}
-                  className={`p-3 rounded-xl border text-left rtl:text-right transition cursor-pointer flex flex-col justify-between gap-2 ${
+                  className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between gap-2 ${
                     csvExportTarget === 'combined'
                       ? 'bg-emerald-950/40 border-emerald-500/60 ring-1 ring-emerald-500/50 shadow-md shadow-emerald-950/50'
                       : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-400'
@@ -1193,20 +1173,18 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-slate-100">
                         <Layers className="w-4 h-4 text-emerald-400" />
-                        <span>{language === 'fa' ? 'مجموعه کامل' : 'Unified Data'}</span>
+                        <span>{t.csvOptUnifiedTitle}</span>
                       </div>
                       <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30">
                         {csvScope === 'filtered' ? filteredLinks.length + filteredHeadings.length : links.length + headings.length}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-400 mt-1 leading-snug">
-                      {language === 'fa'
-                        ? 'ترکیب یکپارچه لینک‌ها و سرتیترها (H1-H6)'
-                        : 'Unified links & headings in one normalized sheet'}
+                      {t.csvOptUnifiedDesc}
                     </p>
                   </div>
                   <span className="text-[10px] font-medium text-emerald-400/90">
-                    {language === 'fa' ? 'پیشنهادی برای تحلیل کامل' : 'Recommended'}
+                    {t.csvOptUnifiedBadge}
                   </span>
                 </button>
 
@@ -1214,7 +1192,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                 <button
                   type="button"
                   onClick={() => setCsvExportTarget('links')}
-                  className={`p-3 rounded-xl border text-left rtl:text-right transition cursor-pointer flex flex-col justify-between gap-2 ${
+                  className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between gap-2 ${
                     csvExportTarget === 'links'
                       ? 'bg-indigo-950/40 border-indigo-500/60 ring-1 ring-indigo-500/50 shadow-md shadow-indigo-950/50'
                       : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-400'
@@ -1224,20 +1202,18 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-slate-100">
                         <Link2 className="w-4 h-4 text-indigo-400" />
-                        <span>{language === 'fa' ? 'فقط لینک‌ها' : 'Links Only'}</span>
+                        <span>{t.csvOptLinksTitle}</span>
                       </div>
                       <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-500/30">
                         {csvScope === 'filtered' ? filteredLinks.length : links.length}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-400 mt-1 leading-snug">
-                      {language === 'fa'
-                        ? 'انکرتکست، آدرس مقصد، نوع لینک و دستگاه‌ها'
-                        : 'Anchor texts, destination URLs & types'}
+                      {t.csvOptLinksDesc}
                     </p>
                   </div>
                   <span className="text-[10px] font-medium text-indigo-400/90">
-                    {language === 'fa' ? 'سئو و لینک‌سازی' : 'SEO & Routing'}
+                    {t.csvOptLinksBadge}
                   </span>
                 </button>
 
@@ -1245,7 +1221,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                 <button
                   type="button"
                   onClick={() => setCsvExportTarget('headings')}
-                  className={`p-3 rounded-xl border text-left rtl:text-right transition cursor-pointer flex flex-col justify-between gap-2 ${
+                  className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between gap-2 ${
                     csvExportTarget === 'headings'
                       ? 'bg-rose-950/40 border-rose-500/60 ring-1 ring-rose-500/50 shadow-md shadow-rose-950/50'
                       : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 text-slate-400'
@@ -1255,20 +1231,18 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-slate-100">
                         <Heading className="w-4 h-4 text-rose-400" />
-                        <span>{language === 'fa' ? 'فقط تیترها' : 'Headings Only'}</span>
+                        <span>{t.csvOptHeadingsTitle}</span>
                       </div>
                       <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-500/30">
                         {csvScope === 'filtered' ? filteredHeadings.length : headings.length}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-400 mt-1 leading-snug">
-                      {language === 'fa'
-                        ? 'سلسله‌مراتب تیترها (H1 تا H6) و موقعیت صفحه'
-                        : 'Hierarchy (H1-H6) and content outline'}
+                      {t.csvOptHeadingsDesc}
                     </p>
                   </div>
                   <span className="text-[10px] font-medium text-rose-400/90">
-                    {language === 'fa' ? 'ساختار محتوایی' : 'Outline & Content'}
+                    {t.csvOptHeadingsBadge}
                   </span>
                 </button>
               </div>
@@ -1280,7 +1254,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                     <Heading className="w-3.5 h-3.5 text-rose-400" />
-                    <span>{language === 'fa' ? '۲. فیلتر سطوح تیترها (H1-H6):' : '2. Select Heading Levels:'}</span>
+                    <span>{t.csvStep2Title}</span>
                   </span>
                   <div className="flex items-center gap-2 text-[10px]">
                     <button
@@ -1297,7 +1271,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                       }
                       className="text-indigo-400 hover:text-indigo-300 transition cursor-pointer"
                     >
-                      {language === 'fa' ? 'انتخاب همه' : 'Select All'}
+                      {t.csvSelectAll}
                     </button>
                     <span className="text-slate-600">•</span>
                     <button
@@ -1314,7 +1288,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                       }
                       className="text-slate-400 hover:text-slate-200 transition cursor-pointer"
                     >
-                      {language === 'fa' ? 'فقط H1 & H2' : 'H1 & H2 only'}
+                      {t.csvH1H2Only}
                     </button>
                   </div>
                 </div>
@@ -1353,7 +1327,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
               {/* Scope Selector */}
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
                 <span className="text-xs font-semibold text-slate-300 block">
-                  {language === 'fa' ? '۳. محدوده داده‌های خروجی:' : '3. Export Scope:'}
+                  {t.csvStep3Title}
                 </span>
                 <div className="space-y-1.5">
                   <label className="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
@@ -1366,9 +1340,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                       className="text-emerald-500 focus:ring-emerald-500 bg-slate-900 border-slate-700"
                     />
                     <span>
-                      {language === 'fa'
-                        ? `موارد فیلترشده فعلی (${activeSection === 'links' ? filteredLinks.length : filteredHeadings.length})`
-                        : `Current Filtered View (${activeSection === 'links' ? filteredLinks.length : filteredHeadings.length})`}
+                      {t.csvScopeFiltered} ({activeSection === 'links' ? filteredLinks.length : filteredHeadings.length})
                     </span>
                   </label>
                   <label className="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
@@ -1381,9 +1353,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                       className="text-emerald-500 focus:ring-emerald-500 bg-slate-900 border-slate-700"
                     />
                     <span>
-                      {language === 'fa'
-                        ? `کل داده‌های استخراج‌شده (${links.length} لینک، ${headings.length} تیتر)`
-                        : `All Extracted Items (${links.length} links, ${headings.length} headings)`}
+                      {t.csvScopeAll} ({links.length} {t.linksCountLabel}, {headings.length} {t.headingsCountLabel})
                     </span>
                   </label>
                 </div>
@@ -1393,7 +1363,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
               <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between gap-2">
                 <div>
                   <span className="text-xs font-semibold text-slate-300 block">
-                    {language === 'fa' ? '۴. ستون‌های چند دستگاهی:' : '4. Multi-Device Compatibility:'}
+                    {t.csvStep4Title}
                   </span>
                   <label className="flex items-start gap-2.5 mt-2 cursor-pointer">
                     <input
@@ -1404,12 +1374,10 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                     />
                     <div className="text-xs text-slate-300">
                       <span className="font-medium text-slate-200">
-                        {language === 'fa' ? 'افزودن ستون‌های تفکیک دستگاه' : 'Include Device Support Columns'}
+                        {t.csvIncludeDevicesTitle}
                       </span>
                       <p className="text-[11px] text-slate-400 mt-0.5">
-                        {language === 'fa'
-                          ? 'شامل دسته‌بندی دسکتاپ، تبلت، موبایل و وضعیت انحصار'
-                          : 'Desktop, Tablet, Mobile and exclusivity classification'}
+                        {t.csvIncludeDevicesDesc}
                       </p>
                     </div>
                   </label>
@@ -1427,9 +1395,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
             <div className="p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2">
               <Check className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>
-                {language === 'fa'
-                  ? 'این فایل شامل علامت UTF-8 BOM است؛ متن‌های فارسی و کاراکترهای خاص بدون به‌هم‌ریختگی مستقیماً در نرم‌افزار Excel و Google Sheets باز می‌شوند.'
-                  : 'Encoded with UTF-8 BOM for zero-corruption character display in Microsoft Excel (Windows/macOS), Apple Numbers, and Google Sheets.'}
+                {t.csvUtf8BomNote}
               </span>
             </div>
 
@@ -1438,12 +1404,12 @@ export const LinksTable: React.FC<LinksTableProps> = ({
               <span className="text-xs text-slate-400 font-mono">
                 {estimatedCsvRows === 0 ? (
                   <span className="text-amber-400 font-semibold">
-                    {language === 'fa' ? 'هیچ سطری برای خروجی انتخاب نشده است' : 'No items match selected filters'}
+                    {t.csvNoRowsMatch}
                   </span>
                 ) : (
                   <span>
-                    {language === 'fa' ? 'تعداد سطرهای فایل:' : 'Ready to export:'}{' '}
-                    <strong className="text-emerald-400">{estimatedCsvRows}</strong> {language === 'fa' ? 'سطر' : 'records'}
+                    {t.csvReadyToExport}{' '}
+                    <strong className="text-emerald-400">{estimatedCsvRows}</strong> {t.csvRowsUnit}
                   </span>
                 )}
               </span>
@@ -1465,9 +1431,7 @@ export const LinksTable: React.FC<LinksTableProps> = ({
                 >
                   <Download className="w-4 h-4" />
                   <span>
-                    {language === 'fa'
-                      ? 'دانلود فایل CSV ساختاریافته'
-                      : 'Download Structured CSV'}
+                    {t.csvDownloadBtn}
                   </span>
                 </button>
               </div>
