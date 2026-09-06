@@ -236,8 +236,89 @@
       }
     });
 
-    // 6. Clone and Pre-Sanitize DOM for Offline Packaging
+    // 6. Detect Sticky/Fixed Headers and Neutralize Ancestor Overflow
+    const stickyHeaderCandidates = Array.from(document.querySelectorAll(
+      'header, nav, [role="banner"], ' +
+      '.header, .site-header, .main-header, .top-header, .page-header, .navbar, .top-bar, .topbar, ' +
+      '#header, #site-header, #main-header, #masthead, ' +
+      '[class*="sticky"], [id*="sticky"], [data-sticky], [data-elementor-sticky], .elementor-sticky'
+    ));
+
+    document.querySelectorAll('div, section, header, nav').forEach((el) => {
+      if (el.offsetTop < 400 && !stickyHeaderCandidates.includes(el)) {
+        try {
+          const pos = window.getComputedStyle(el).position;
+          if (pos === 'sticky' || pos === '-webkit-sticky' || pos === 'fixed') {
+            stickyHeaderCandidates.push(el);
+          }
+        } catch (e) {}
+      }
+    });
+
+    const taggedStickyElements = [];
+    const taggedOverflowParents = [];
+
+    stickyHeaderCandidates.forEach((el) => {
+      try {
+        const cStyle = window.getComputedStyle(el);
+        const pos = cStyle.position;
+        const isStickyOrFixed = pos === 'sticky' || pos === '-webkit-sticky' || pos === 'fixed';
+        const hasStickyClass = /(sticky|affix|fixed-top|is-sticky|elementor-sticky)/i.test(el.className || '');
+        const hasStickyAttr = el.hasAttribute('data-sticky') || el.hasAttribute('data-elementor-sticky');
+        const isTopHeader = (el.tagName.toLowerCase() === 'header' || el.getAttribute('role') === 'banner') && el.offsetTop < 300;
+
+        if (isStickyOrFixed || hasStickyClass || hasStickyAttr || isTopHeader) {
+          el.setAttribute('data-offline-sticky-header', 'true');
+          el.setAttribute('data-sticky-original-pos', pos);
+          el.setAttribute('data-sticky-original-top', cStyle.top);
+          el.setAttribute('data-sticky-original-zindex', cStyle.zIndex !== 'auto' ? cStyle.zIndex : '9999');
+          
+          const bg = cStyle.backgroundColor;
+          if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
+            el.setAttribute('data-sticky-original-bg', bg);
+          }
+          
+          const rect = el.getBoundingClientRect();
+          if (rect.height > 0) {
+            el.setAttribute('data-sticky-height', String(Math.round(rect.height)));
+          }
+          taggedStickyElements.push(el);
+
+          // Trace ancestors and tag any that have overflow != visible
+          let parent = el.parentElement;
+          while (parent && parent !== document.body && parent !== document.documentElement) {
+            try {
+              const pStyle = window.getComputedStyle(parent);
+              if (pStyle.overflow !== 'visible' || pStyle.overflowX !== 'visible' || pStyle.overflowY !== 'visible') {
+                parent.setAttribute('data-offline-overflow-fix', 'true');
+                taggedOverflowParents.push(parent);
+              }
+            } catch (e) {}
+            parent = parent.parentElement;
+          }
+        }
+      } catch (e) {}
+    });
+
+    // 7. Clone and Pre-Sanitize DOM for Offline Packaging
     const clonedDoc = document.documentElement.cloneNode(true);
+
+    // Clean up temporary marker attributes from live DOM to leave page pristine
+    taggedStickyElements.forEach(el => {
+      try {
+        el.removeAttribute('data-offline-sticky-header');
+        el.removeAttribute('data-sticky-original-pos');
+        el.removeAttribute('data-sticky-original-top');
+        el.removeAttribute('data-sticky-original-zindex');
+        el.removeAttribute('data-sticky-original-bg');
+        el.removeAttribute('data-sticky-height');
+      } catch (e) {}
+    });
+    taggedOverflowParents.forEach(el => {
+      try {
+        el.removeAttribute('data-offline-overflow-fix');
+      } catch (e) {}
+    });
     
     // Promote lazy-load images to real src
     clonedDoc.querySelectorAll('img').forEach((img) => {

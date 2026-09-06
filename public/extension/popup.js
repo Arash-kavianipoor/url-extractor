@@ -825,9 +825,11 @@ const OFFLINE_AIRGAP_EARLY_CODE = `(function() {
         return jq;
       }
       var elements = [];
-      if (typeof selector === 'string') {
+      if (selector === window || (typeof Window !== 'undefined' && selector instanceof Window) || selector === document || (typeof Document !== 'undefined' && selector instanceof Document)) {
+        elements = [selector];
+      } else if (typeof selector === 'string') {
         try { elements = Array.prototype.slice.call(document.querySelectorAll(selector)); } catch(e){}
-      } else if (selector && selector.nodeType) {
+      } else if (selector && (selector.nodeType || selector.document)) {
         elements = [selector];
       } else if (Array.isArray(selector)) {
         elements = selector;
@@ -869,6 +871,73 @@ const OFFLINE_AIRGAP_EARLY_CODE = `(function() {
         return this;
       },
       click: function(fn) { return fn ? this.on('click', fn) : this.trigger('click'); },
+      scroll: function(fn) { return fn ? this.on('scroll', fn) : this.trigger('scroll'); },
+      scrollTop: function(val) {
+        if (val !== undefined) {
+          this.each(function() {
+            if (this === window || this === document) window.scrollTo(0, val);
+            else this.scrollTop = val;
+          });
+          return this;
+        }
+        var el = this[0];
+        if (!el || el === window || el === document) return window.pageYOffset || document.documentElement.scrollTop || 0;
+        return el.scrollTop || 0;
+      },
+      scrollLeft: function(val) {
+        if (val !== undefined) {
+          this.each(function() {
+            if (this === window || this === document) window.scrollTo(val, 0);
+            else this.scrollLeft = val;
+          });
+          return this;
+        }
+        var el = this[0];
+        if (!el || el === window || el === document) return window.pageXOffset || document.documentElement.scrollLeft || 0;
+        return el.scrollLeft || 0;
+      },
+      height: function() {
+        var el = this[0];
+        if (!el) return 0;
+        if (el === window) return window.innerHeight;
+        if (el === document) return document.documentElement.scrollHeight;
+        return el.clientHeight || (el.getBoundingClientRect ? el.getBoundingClientRect().height : 0);
+      },
+      width: function() {
+        var el = this[0];
+        if (!el) return 0;
+        if (el === window) return window.innerWidth;
+        if (el === document) return document.documentElement.scrollWidth;
+        return el.clientWidth || (el.getBoundingClientRect ? el.getBoundingClientRect().width : 0);
+      },
+      innerHeight: function() { return this.height(); },
+      innerWidth: function() { return this.width(); },
+      outerHeight: function() {
+        var el = this[0];
+        if (!el) return 0;
+        if (el === window) return window.innerHeight;
+        return el.offsetHeight || (el.getBoundingClientRect ? el.getBoundingClientRect().height : 0);
+      },
+      outerWidth: function() {
+        var el = this[0];
+        if (!el) return 0;
+        if (el === window) return window.innerWidth;
+        return el.offsetWidth || (el.getBoundingClientRect ? el.getBoundingClientRect().width : 0);
+      },
+      offset: function() {
+        var el = this[0];
+        if (!el || !el.getBoundingClientRect) return { top: 0, left: 0 };
+        var rect = el.getBoundingClientRect();
+        return {
+          top: rect.top + (window.pageYOffset || document.documentElement.scrollTop || 0),
+          left: rect.left + (window.pageXOffset || document.documentElement.scrollLeft || 0)
+        };
+      },
+      position: function() {
+        var el = this[0];
+        if (!el) return { top: 0, left: 0 };
+        return { top: el.offsetTop || 0, left: el.offsetLeft || 0 };
+      },
       find: function(sel) {
         var res = [];
         this.each(function() {
@@ -980,7 +1049,147 @@ const OFFLINE_AIRGAP_EARLY_CODE = `(function() {
     });
   }
 
-  // 6. Global Uncaught Error Suppression (Air-Gap Zero-Crash)
+  // 6. Autonomous Offline Sticky Header Engine (Air-Gap Zero-Drop)
+  (function initOfflineStickyHeaders() {
+    function activateSticky() {
+      var candidates = Array.prototype.slice.call(document.querySelectorAll(
+        '[data-offline-sticky-header="true"], header, [role="banner"], ' +
+        '.header, .site-header, .main-header, .top-header, .navbar, .topbar, ' +
+        '#header, #site-header, #masthead, .elementor-sticky, [class*="sticky-header"], [data-elementor-sticky]'
+      ));
+
+      var headers = [];
+      candidates.forEach(function(el) {
+        if (headers.indexOf(el) !== -1) return;
+        var isNested = false;
+        for (var i = 0; i < candidates.length; i++) {
+          if (candidates[i] !== el && candidates[i].contains(el)) {
+            isNested = true;
+            break;
+          }
+        }
+        if (!isNested) {
+          var rect = el.getBoundingClientRect();
+          var top = rect.top + (window.pageYOffset || document.documentElement.scrollTop || 0);
+          if (top < 500 && rect.height > 20) {
+            headers.push(el);
+          }
+        }
+      });
+
+      if (headers.length === 0) return;
+
+      headers.forEach(function(header) {
+        // Fix ancestor overflow: hidden/auto that prevents position: sticky
+        var parent = header.parentElement;
+        while (parent && parent !== document.body && parent !== document.documentElement) {
+          try {
+            var pStyle = window.getComputedStyle(parent);
+            if (pStyle.overflow !== 'visible' || pStyle.overflowX !== 'visible' || pStyle.overflowY !== 'visible') {
+              parent.style.overflow = 'visible';
+              parent.style.overflowX = 'clip';
+            }
+          } catch(e) {}
+          parent = parent.parentElement;
+        }
+
+        // Ensure native sticky is enabled
+        var currentPos = window.getComputedStyle(header).position;
+        if (currentPos !== 'fixed') {
+          header.style.position = '-webkit-sticky';
+          header.style.position = 'sticky';
+          header.style.top = '0px';
+          if (!header.style.zIndex || header.style.zIndex === 'auto') {
+            header.style.zIndex = '99999';
+          }
+        }
+
+        // Invisible placeholder spacer to prevent content jumping when scrolling
+        var initialRect = header.getBoundingClientRect();
+        var initialTop = initialRect.top + (window.pageYOffset || document.documentElement.scrollTop || 0);
+        var headerHeight = initialRect.height || parseInt(header.getAttribute('data-sticky-height') || '0', 10) || 80;
+        
+        var spacer = document.createElement('div');
+        spacer.className = 'offline-sticky-placeholder-spacer';
+        spacer.style.display = 'none';
+        spacer.style.height = headerHeight + 'px';
+        spacer.style.width = '100%';
+        spacer.style.visibility = 'hidden';
+        spacer.style.pointerEvents = 'none';
+        if (header.parentNode) {
+          header.parentNode.insertBefore(spacer, header.nextSibling);
+        }
+
+        var origBg = header.getAttribute('data-sticky-original-bg') || window.getComputedStyle(header).backgroundColor;
+        var hasBg = origBg && origBg !== 'rgba(0, 0, 0, 0)' && origBg !== 'transparent';
+        var fallbackBg = '#ffffff';
+        try {
+          var bodyBg = window.getComputedStyle(document.body).backgroundColor;
+          if (bodyBg && bodyBg !== 'rgba(0, 0, 0, 0)' && bodyBg !== 'transparent') fallbackBg = bodyBg;
+        } catch(e) {}
+
+        var isFixed = false;
+        function onScroll() {
+          var scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+          var triggerPoint = Math.max(initialTop, 10);
+
+          if (scrollY > triggerPoint) {
+            if (!isFixed) {
+              isFixed = true;
+              header.classList.add('offline-sticky-fixed-active', 'is-sticky', 'sticky-active', 'scrolled', 'elementor-sticky--active');
+              
+              var parentHeight = header.parentElement ? header.parentElement.offsetHeight : 0;
+              if (parentHeight <= headerHeight + 30) {
+                header.style.position = 'fixed';
+                header.style.top = '0px';
+                header.style.left = '0px';
+                header.style.width = '100%';
+                header.style.zIndex = '99999';
+                spacer.style.display = 'block';
+              }
+              
+              if (!hasBg) {
+                header.style.backgroundColor = fallbackBg;
+              }
+              header.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.08)';
+            }
+          } else {
+            if (isFixed) {
+              isFixed = false;
+              header.classList.remove('offline-sticky-fixed-active', 'is-sticky', 'sticky-active', 'scrolled', 'elementor-sticky--active');
+              
+              var origPos = header.getAttribute('data-sticky-original-pos');
+              if (origPos === 'fixed') {
+                header.style.position = 'fixed';
+              } else {
+                header.style.position = 'sticky';
+              }
+              header.style.top = (header.getAttribute('data-sticky-original-top') || '0px');
+              header.style.left = '';
+              header.style.width = '';
+              header.style.boxShadow = '';
+              if (!hasBg) {
+                header.style.backgroundColor = '';
+              }
+              spacer.style.display = 'none';
+            }
+          }
+        }
+
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', activateSticky);
+    } else {
+      setTimeout(activateSticky, 50);
+    }
+    window.addEventListener('load', activateSticky);
+  })();
+
+  // 7. Global Uncaught Error Suppression (Air-Gap Zero-Crash)
   window.addEventListener('error', function(e) { e.preventDefault(); }, true);
   window.addEventListener('unhandledrejection', function(e) { e.preventDefault(); });
 })();`;
@@ -1094,46 +1303,215 @@ const OFFLINE_AIRGAP_SHIELD = `/* ==============================================
     var _jqQ = [];
     var jqStub = function(arg) {
       if (typeof arg === 'function') {
-        if (document.readyState === 'complete') {
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
           setTimeout(function() { try { if (window.jQuery && window.jQuery !== jqStub) window.jQuery(arg); else arg(jqStub); } catch(e){} }, 1);
         } else {
           _jqQ.push(arg);
         }
         return jqStub;
       }
+      var elements = [];
+      if (arg === window || (typeof Window !== 'undefined' && arg instanceof Window) || arg === document || (typeof Document !== 'undefined' && arg instanceof Document)) {
+        elements = [arg];
+      } else if (typeof arg === 'string') {
+        try { elements = Array.prototype.slice.call(document.querySelectorAll(arg)); } catch(e){}
+      } else if (arg && (arg.nodeType || arg.document)) {
+        elements = [arg];
+      } else if (Array.isArray(arg)) {
+        elements = arg;
+      }
       var dummy = {
         ready: function(fn) { if (fn) _jqQ.push(fn); return dummy; },
-        on: function() { return dummy; },
+        on: function(evt, sel, handler) {
+          var h = typeof sel === 'function' ? sel : handler;
+          if (h) {
+            elements.forEach(function(el) {
+              (evt || '').split(' ').forEach(function(n) {
+                var clean = n.split('.')[0];
+                if (clean && el.addEventListener) el.addEventListener(clean, h);
+              });
+            });
+          }
+          return dummy;
+        },
         off: function() { return dummy; },
-        bind: function() { return dummy; },
-        trigger: function() { return dummy; },
-        click: function() { return dummy; },
-        change: function() { return dummy; },
-        css: function() { return dummy; },
-        addClass: function() { return dummy; },
-        removeClass: function() { return dummy; },
-        toggleClass: function() { return dummy; },
-        attr: function() { return ''; },
-        prop: function() { return false; },
-        val: function() { return ''; },
-        html: function() { return dummy; },
-        text: function() { return dummy; },
-        append: function() { return dummy; },
-        prepend: function() { return dummy; },
-        find: function() { return dummy; },
-        children: function() { return dummy; },
-        parent: function() { return dummy; },
-        closest: function() { return dummy; },
-        each: function() { return dummy; },
+        bind: function(e, h) { return dummy.on(e, h); },
+        trigger: function(evt) {
+          elements.forEach(function(el) {
+            if (el.dispatchEvent) {
+              var ev = new Event(evt.split('.')[0], { bubbles: true });
+              el.dispatchEvent(ev);
+            }
+          });
+          return dummy;
+        },
+        click: function(fn) { return fn ? dummy.on('click', fn) : dummy.trigger('click'); },
+        scroll: function(fn) { return fn ? dummy.on('scroll', fn) : dummy.trigger('scroll'); },
+        scrollTop: function(val) {
+          if (val !== undefined) {
+            elements.forEach(function(el) {
+              if (el === window || el === document) window.scrollTo(0, val);
+              else el.scrollTop = val;
+            });
+            return dummy;
+          }
+          var el = elements[0];
+          if (!el || el === window || el === document) return window.pageYOffset || document.documentElement.scrollTop || 0;
+          return el.scrollTop || 0;
+        },
+        scrollLeft: function(val) {
+          if (val !== undefined) {
+            elements.forEach(function(el) {
+              if (el === window || el === document) window.scrollTo(val, 0);
+              else el.scrollLeft = val;
+            });
+            return dummy;
+          }
+          var el = elements[0];
+          if (!el || el === window || el === document) return window.pageXOffset || document.documentElement.scrollLeft || 0;
+          return el.scrollLeft || 0;
+        },
+        height: function() {
+          var el = elements[0];
+          if (!el) return 0;
+          if (el === window) return window.innerHeight;
+          if (el === document) return document.documentElement.scrollHeight;
+          return el.clientHeight || (el.getBoundingClientRect ? el.getBoundingClientRect().height : 0);
+        },
+        width: function() {
+          var el = elements[0];
+          if (!el) return 0;
+          if (el === window) return window.innerWidth;
+          if (el === document) return document.documentElement.scrollWidth;
+          return el.clientWidth || (el.getBoundingClientRect ? el.getBoundingClientRect().width : 0);
+        },
+        innerHeight: function() { return dummy.height(); },
+        innerWidth: function() { return dummy.width(); },
+        outerHeight: function() {
+          var el = elements[0];
+          if (!el) return 0;
+          if (el === window) return window.innerHeight;
+          return el.offsetHeight || (el.getBoundingClientRect ? el.getBoundingClientRect().height : 0);
+        },
+        outerWidth: function() {
+          var el = elements[0];
+          if (!el) return 0;
+          if (el === window) return window.innerWidth;
+          return el.offsetWidth || (el.getBoundingClientRect ? el.getBoundingClientRect().width : 0);
+        },
+        offset: function() {
+          var el = elements[0];
+          if (!el || !el.getBoundingClientRect) return { top: 0, left: 0 };
+          var rect = el.getBoundingClientRect();
+          return {
+            top: rect.top + (window.pageYOffset || document.documentElement.scrollTop || 0),
+            left: rect.left + (window.pageXOffset || document.documentElement.scrollLeft || 0)
+          };
+        },
+        position: function() {
+          var el = elements[0];
+          if (!el) return { top: 0, left: 0 };
+          return { top: el.offsetTop || 0, left: el.offsetLeft || 0 };
+        },
+        change: function(fn) { return fn ? dummy.on('change', fn) : dummy; },
+        css: function(prop, val) {
+          if (typeof prop === 'object') {
+            elements.forEach(function(el) { if (el.style) for (var k in prop) el.style[k] = prop[k]; });
+          } else if (val !== undefined) {
+            elements.forEach(function(el) { if (el.style) el.style[prop] = val; });
+          } else {
+            return elements[0] ? getComputedStyle(elements[0])[prop] : '';
+          }
+          return dummy;
+        },
+        addClass: function(cls) {
+          elements.forEach(function(el) { if (el.classList) (cls||'').split(' ').forEach(function(c){ if(c) el.classList.add(c); }); });
+          return dummy;
+        },
+        removeClass: function(cls) {
+          elements.forEach(function(el) { if (el.classList) (cls||'').split(' ').forEach(function(c){ if(c) el.classList.remove(c); }); });
+          return dummy;
+        },
+        toggleClass: function(cls) {
+          elements.forEach(function(el) { if (el.classList) (cls||'').split(' ').forEach(function(c){ if(c) el.classList.toggle(c); }); });
+          return dummy;
+        },
+        attr: function(k, v) {
+          if (v !== undefined) { elements.forEach(function(el){ if (el.setAttribute) el.setAttribute(k, v); }); return dummy; }
+          return elements[0] && elements[0].getAttribute ? elements[0].getAttribute(k) : '';
+        },
+        prop: function(k, v) {
+          if (v !== undefined) { elements.forEach(function(el){ el[k] = v; }); return dummy; }
+          return elements[0] ? elements[0][k] : false;
+        },
+        val: function(v) {
+          if (v !== undefined) { elements.forEach(function(el){ el.value = v; }); return dummy; }
+          return elements[0] ? elements[0].value : '';
+        },
+        html: function(h) {
+          if (h !== undefined) { elements.forEach(function(el){ el.innerHTML = h; }); return dummy; }
+          return elements[0] ? elements[0].innerHTML : '';
+        },
+        text: function(t) {
+          if (t !== undefined) { elements.forEach(function(el){ el.textContent = t; }); return dummy; }
+          return elements[0] ? elements[0].textContent : '';
+        },
+        append: function(content) {
+          elements.forEach(function(el) {
+            if (typeof content === 'string' && el.insertAdjacentHTML) el.insertAdjacentHTML('beforeend', content);
+            else if (content && content.nodeType && el.appendChild) el.appendChild(content);
+          });
+          return dummy;
+        },
+        prepend: function(content) {
+          elements.forEach(function(el) {
+            if (typeof content === 'string' && el.insertAdjacentHTML) el.insertAdjacentHTML('afterbegin', content);
+            else if (content && content.nodeType && el.insertBefore) el.insertBefore(content, el.firstChild);
+          });
+          return dummy;
+        },
+        find: function(sel) {
+          var res = [];
+          elements.forEach(function(el) {
+            try { res = res.concat(Array.prototype.slice.call(el.querySelectorAll(sel))); } catch(e){}
+          });
+          return jqStub(res);
+        },
+        children: function() {
+          var res = [];
+          elements.forEach(function(el) { res = res.concat(Array.prototype.slice.call(el.children)); });
+          return jqStub(res);
+        },
+        parent: function() {
+          var res = [];
+          elements.forEach(function(el) { if (el.parentNode && !res.includes(el.parentNode)) res.push(el.parentNode); });
+          return jqStub(res);
+        },
+        closest: function(sel) {
+          var res = [];
+          elements.forEach(function(el) {
+            var curr = el;
+            while (curr && curr.matches) {
+              if (curr.matches(sel)) { res.push(curr); break; }
+              curr = curr.parentElement;
+            }
+          });
+          return jqStub(res);
+        },
+        each: function(cb) {
+          for (var i = 0; i < elements.length; i++) cb.call(elements[i], i, elements[i]);
+          return dummy;
+        },
         animate: function() { return dummy; },
-        fadeIn: function() { return dummy; },
-        fadeOut: function() { return dummy; },
-        slideUp: function() { return dummy; },
-        slideDown: function() { return dummy; },
-        hide: function() { return dummy; },
-        show: function() { return dummy; },
-        length: 0
+        fadeIn: function() { return dummy.show(); },
+        fadeOut: function() { return dummy.hide(); },
+        slideUp: function() { return dummy.hide(); },
+        slideDown: function() { return dummy.show(); },
+        hide: function() { elements.forEach(function(el){ if(el.style) el.style.display = 'none'; }); return dummy; },
+        show: function() { elements.forEach(function(el){ if(el.style) el.style.display = ''; }); return dummy; },
+        length: elements.length
       };
+      for (var i = 0; i < elements.length; i++) dummy[i] = elements[i];
       return dummy;
     };
     jqStub.fn = jqStub.prototype = {};
@@ -1160,12 +1538,153 @@ const OFFLINE_AIRGAP_SHIELD = `/* ==============================================
         try { fn(window.jQuery); } catch(e) {}
       }
     };
-    if (document.readyState === 'complete') {
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
       window.__flushJqQueue();
     } else {
       window.addEventListener('load', window.__flushJqQueue);
+      document.addEventListener('DOMContentLoaded', window.__flushJqQueue);
     }
   }
+
+  // Autonomous Offline Sticky Header Engine in Shield
+  (function initOfflineStickyShield() {
+    function activateSticky() {
+      var candidates = Array.prototype.slice.call(document.querySelectorAll(
+        '[data-offline-sticky-header="true"], header, [role="banner"], ' +
+        '.header, .site-header, .main-header, .top-header, .navbar, .topbar, ' +
+        '#header, #site-header, #masthead, .elementor-sticky, [class*="sticky-header"], [data-elementor-sticky]'
+      ));
+
+      var headers = [];
+      candidates.forEach(function(el) {
+        if (headers.indexOf(el) !== -1) return;
+        var isNested = false;
+        for (var i = 0; i < candidates.length; i++) {
+          if (candidates[i] !== el && candidates[i].contains(el)) {
+            isNested = true;
+            break;
+          }
+        }
+        if (!isNested) {
+          var rect = el.getBoundingClientRect();
+          var top = rect.top + (window.pageYOffset || document.documentElement.scrollTop || 0);
+          if (top < 500 && rect.height > 20) {
+            headers.push(el);
+          }
+        }
+      });
+
+      if (headers.length === 0) return;
+
+      headers.forEach(function(header) {
+        if (header.getAttribute('data-sticky-engine-active') === 'true') return;
+        header.setAttribute('data-sticky-engine-active', 'true');
+
+        var parent = header.parentElement;
+        while (parent && parent !== document.body && parent !== document.documentElement) {
+          try {
+            var pStyle = window.getComputedStyle(parent);
+            if (pStyle.overflow !== 'visible' || pStyle.overflowX !== 'visible' || pStyle.overflowY !== 'visible') {
+              parent.style.overflow = 'visible';
+              parent.style.overflowX = 'clip';
+            }
+          } catch(e) {}
+          parent = parent.parentElement;
+        }
+
+        var currentPos = window.getComputedStyle(header).position;
+        if (currentPos !== 'fixed') {
+          header.style.position = '-webkit-sticky';
+          header.style.position = 'sticky';
+          header.style.top = '0px';
+          if (!header.style.zIndex || header.style.zIndex === 'auto') {
+            header.style.zIndex = '99999';
+          }
+        }
+
+        var initialRect = header.getBoundingClientRect();
+        var initialTop = initialRect.top + (window.pageYOffset || document.documentElement.scrollTop || 0);
+        var headerHeight = initialRect.height || parseInt(header.getAttribute('data-sticky-height') || '0', 10) || 80;
+        
+        var spacer = document.createElement('div');
+        spacer.className = 'offline-sticky-placeholder-spacer';
+        spacer.style.display = 'none';
+        spacer.style.height = headerHeight + 'px';
+        spacer.style.width = '100%';
+        spacer.style.visibility = 'hidden';
+        spacer.style.pointerEvents = 'none';
+        if (header.parentNode) {
+          header.parentNode.insertBefore(spacer, header.nextSibling);
+        }
+
+        var origBg = header.getAttribute('data-sticky-original-bg') || window.getComputedStyle(header).backgroundColor;
+        var hasBg = origBg && origBg !== 'rgba(0, 0, 0, 0)' && origBg !== 'transparent';
+        var fallbackBg = '#ffffff';
+        try {
+          var bodyBg = window.getComputedStyle(document.body).backgroundColor;
+          if (bodyBg && bodyBg !== 'rgba(0, 0, 0, 0)' && bodyBg !== 'transparent') fallbackBg = bodyBg;
+        } catch(e) {}
+
+        var isFixed = false;
+        function onScroll() {
+          var scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+          var triggerPoint = Math.max(initialTop, 10);
+
+          if (scrollY > triggerPoint) {
+            if (!isFixed) {
+              isFixed = true;
+              header.classList.add('offline-sticky-fixed-active', 'is-sticky', 'sticky-active', 'scrolled', 'elementor-sticky--active');
+              
+              var parentHeight = header.parentElement ? header.parentElement.offsetHeight : 0;
+              if (parentHeight <= headerHeight + 30) {
+                header.style.position = 'fixed';
+                header.style.top = '0px';
+                header.style.left = '0px';
+                header.style.width = '100%';
+                header.style.zIndex = '99999';
+                spacer.style.display = 'block';
+              }
+              
+              if (!hasBg) {
+                header.style.backgroundColor = fallbackBg;
+              }
+              header.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.08)';
+            }
+          } else {
+            if (isFixed) {
+              isFixed = false;
+              header.classList.remove('offline-sticky-fixed-active', 'is-sticky', 'sticky-active', 'scrolled', 'elementor-sticky--active');
+              
+              var origPos = header.getAttribute('data-sticky-original-pos');
+              if (origPos === 'fixed') {
+                header.style.position = 'fixed';
+              } else {
+                header.style.position = 'sticky';
+              }
+              header.style.top = (header.getAttribute('data-sticky-original-top') || '0px');
+              header.style.left = '';
+              header.style.width = '';
+              header.style.boxShadow = '';
+              if (!hasBg) {
+                header.style.backgroundColor = '';
+              }
+              spacer.style.display = 'none';
+            }
+          }
+        }
+
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', activateSticky);
+    } else {
+      setTimeout(activateSticky, 50);
+    }
+    window.addEventListener('load', activateSticky);
+  })();
 
   // 6. Universal WebSocket and EventSource Stubs
   if (typeof window.WebSocket !== 'undefined') {
@@ -2324,7 +2843,7 @@ async function processAndBundleOffline(data, onProgress) {
    100% Air-Gap Zero-Network Compliant | Zero Remote Fetch Required
 ======================================================================== */\n`;
 
-  // Add system typography fallback for Persian/Latin
+  // Add system typography fallback for Persian/Latin and sticky header engine rules
   compiledCss += `
 @font-face {
   font-family: 'system-persian-fallback';
@@ -2332,7 +2851,40 @@ async function processAndBundleOffline(data, onProgress) {
 }
 body, button, input, textarea, select {
   font-family: 'IRANSans', 'Vazirmatn', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Tahoma, Arial, sans-serif !important;
-}\n`;
+}
+
+/* ========================================================================
+   OFFLINE STICKY HEADER & OVERFLOW RECOVERY ENGINE
+   Preserves sticky/fixed headers during offline execution and scrolling
+======================================================================== */
+html, body {
+  overflow-x: clip !important;
+}
+
+[data-offline-overflow-fix="true"],
+.site, #page, #wrapper, .wrapper, .main-wrapper, .page-wrapper, .site-content, .elementor {
+  overflow: visible !important;
+  overflow-x: clip !important;
+}
+
+[data-offline-sticky-header="true"],
+.offline-sticky-forced {
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 99999 !important;
+}
+
+.offline-sticky-fixed-active {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  z-index: 99999 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+  transition: box-shadow 0.25s ease, background-color 0.25s ease !important;
+}
+\n`;
 
   // A. Add external stylesheets
   if (data.stylesheets && data.stylesheets.length > 0) {
@@ -2381,7 +2933,7 @@ body, button, input, textarea, select {
   const trackerPattern = /(googletagmanager|google-analytics|analytics\.js|recaptcha|facebook\.net|clarity\.ms|hotjar|yandex|doubleclick|pixel|cdn-cgi|rbtools|rs6\.min\.js)/i;
   if (data.scriptUrls && data.scriptUrls.length > 0) {
     const validScripts = data.scriptUrls.filter(s => !trackerPattern.test(s));
-    for (let i = 0; i < Math.min(validScripts.length, 10); i++) {
+    for (let i = 0; i < Math.min(validScripts.length, 50); i++) {
       const sUrl = validScripts[i];
       try {
         const resp = await fetch(sUrl);

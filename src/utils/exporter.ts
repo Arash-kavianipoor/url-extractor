@@ -808,9 +808,11 @@ export const OFFLINE_AIRGAP_EARLY_CODE = `(function() {
         return jq;
       }
       var elements = [];
-      if (typeof selector === 'string') {
+      if (selector === window || (typeof Window !== 'undefined' && selector instanceof Window) || selector === document || (typeof Document !== 'undefined' && selector instanceof Document)) {
+        elements = [selector];
+      } else if (typeof selector === 'string') {
         try { elements = Array.prototype.slice.call(document.querySelectorAll(selector)); } catch(e){}
-      } else if (selector && selector.nodeType) {
+      } else if (selector && (selector.nodeType || selector.document)) {
         elements = [selector];
       } else if (Array.isArray(selector)) {
         elements = selector;
@@ -836,6 +838,73 @@ export const OFFLINE_AIRGAP_EARLY_CODE = `(function() {
         return this;
       },
       click: function(fn) { return fn ? this.on('click', fn) : this; },
+      scroll: function(fn) { return fn ? this.on('scroll', fn) : this.trigger('scroll'); },
+      scrollTop: function(val) {
+        if (val !== undefined) {
+          this.each(function() {
+            if (this === window || this === document) window.scrollTo(0, val);
+            else this.scrollTop = val;
+          });
+          return this;
+        }
+        var el = this[0];
+        if (!el || el === window || el === document) return window.pageYOffset || document.documentElement.scrollTop || 0;
+        return el.scrollTop || 0;
+      },
+      scrollLeft: function(val) {
+        if (val !== undefined) {
+          this.each(function() {
+            if (this === window || this === document) window.scrollTo(val, 0);
+            else this.scrollLeft = val;
+          });
+          return this;
+        }
+        var el = this[0];
+        if (!el || el === window || el === document) return window.pageXOffset || document.documentElement.scrollLeft || 0;
+        return el.scrollLeft || 0;
+      },
+      height: function() {
+        var el = this[0];
+        if (!el) return 0;
+        if (el === window) return window.innerHeight;
+        if (el === document) return document.documentElement.scrollHeight;
+        return el.clientHeight || (el.getBoundingClientRect ? el.getBoundingClientRect().height : 0);
+      },
+      width: function() {
+        var el = this[0];
+        if (!el) return 0;
+        if (el === window) return window.innerWidth;
+        if (el === document) return document.documentElement.scrollWidth;
+        return el.clientWidth || (el.getBoundingClientRect ? el.getBoundingClientRect().width : 0);
+      },
+      innerHeight: function() { return this.height(); },
+      innerWidth: function() { return this.width(); },
+      outerHeight: function() {
+        var el = this[0];
+        if (!el) return 0;
+        if (el === window) return window.innerHeight;
+        return el.offsetHeight || (el.getBoundingClientRect ? el.getBoundingClientRect().height : 0);
+      },
+      outerWidth: function() {
+        var el = this[0];
+        if (!el) return 0;
+        if (el === window) return window.innerWidth;
+        return el.offsetWidth || (el.getBoundingClientRect ? el.getBoundingClientRect().width : 0);
+      },
+      offset: function() {
+        var el = this[0];
+        if (!el || !el.getBoundingClientRect) return { top: 0, left: 0 };
+        var rect = el.getBoundingClientRect();
+        return {
+          top: rect.top + (window.pageYOffset || document.documentElement.scrollTop || 0),
+          left: rect.left + (window.pageXOffset || document.documentElement.scrollLeft || 0)
+        };
+      },
+      position: function() {
+        var el = this[0];
+        if (!el) return { top: 0, left: 0 };
+        return { top: el.offsetTop || 0, left: el.offsetLeft || 0 };
+      },
       find: function(sel) {
         var found = [];
         this.each(function() {
@@ -913,6 +982,146 @@ export const OFFLINE_AIRGAP_EARLY_CODE = `(function() {
       }
     });
   }
+
+  // 6. Autonomous Offline Sticky Header Engine (Air-Gap Zero-Drop)
+  (function initOfflineStickyHeaders() {
+    function activateSticky() {
+      var candidates = Array.prototype.slice.call(document.querySelectorAll(
+        '[data-offline-sticky-header="true"], header, [role="banner"], ' +
+        '.header, .site-header, .main-header, .top-header, .navbar, .topbar, ' +
+        '#header, #site-header, #masthead, .elementor-sticky, [class*="sticky-header"], [data-elementor-sticky]'
+      ));
+
+      var headers = [];
+      candidates.forEach(function(el) {
+        if (headers.indexOf(el) !== -1) return;
+        var isNested = false;
+        for (var i = 0; i < candidates.length; i++) {
+          if (candidates[i] !== el && candidates[i].contains(el)) {
+            isNested = true;
+            break;
+          }
+        }
+        if (!isNested) {
+          var rect = el.getBoundingClientRect();
+          var top = rect.top + (window.pageYOffset || document.documentElement.scrollTop || 0);
+          if (top < 500 && rect.height > 20) {
+            headers.push(el);
+          }
+        }
+      });
+
+      if (headers.length === 0) return;
+
+      headers.forEach(function(header) {
+        // Fix ancestor overflow: hidden/auto that prevents position: sticky
+        var parent = header.parentElement;
+        while (parent && parent !== document.body && parent !== document.documentElement) {
+          try {
+            var pStyle = window.getComputedStyle(parent);
+            if (pStyle.overflow !== 'visible' || pStyle.overflowX !== 'visible' || pStyle.overflowY !== 'visible') {
+              parent.style.overflow = 'visible';
+              parent.style.overflowX = 'clip';
+            }
+          } catch(e) {}
+          parent = parent.parentElement;
+        }
+
+        // Ensure native sticky is enabled
+        var currentPos = window.getComputedStyle(header).position;
+        if (currentPos !== 'fixed') {
+          header.style.position = '-webkit-sticky';
+          header.style.position = 'sticky';
+          header.style.top = '0px';
+          if (!header.style.zIndex || header.style.zIndex === 'auto') {
+            header.style.zIndex = '99999';
+          }
+        }
+
+        // Invisible placeholder spacer to prevent content jumping when scrolling
+        var initialRect = header.getBoundingClientRect();
+        var initialTop = initialRect.top + (window.pageYOffset || document.documentElement.scrollTop || 0);
+        var headerHeight = initialRect.height || parseInt(header.getAttribute('data-sticky-height') || '0', 10) || 80;
+        
+        var spacer = document.createElement('div');
+        spacer.className = 'offline-sticky-placeholder-spacer';
+        spacer.style.display = 'none';
+        spacer.style.height = headerHeight + 'px';
+        spacer.style.width = '100%';
+        spacer.style.visibility = 'hidden';
+        spacer.style.pointerEvents = 'none';
+        if (header.parentNode) {
+          header.parentNode.insertBefore(spacer, header.nextSibling);
+        }
+
+        var origBg = header.getAttribute('data-sticky-original-bg') || window.getComputedStyle(header).backgroundColor;
+        var hasBg = origBg && origBg !== 'rgba(0, 0, 0, 0)' && origBg !== 'transparent';
+        var fallbackBg = '#ffffff';
+        try {
+          var bodyBg = window.getComputedStyle(document.body).backgroundColor;
+          if (bodyBg && bodyBg !== 'rgba(0, 0, 0, 0)' && bodyBg !== 'transparent') fallbackBg = bodyBg;
+        } catch(e) {}
+
+        var isFixed = false;
+        function onScroll() {
+          var scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+          var triggerPoint = Math.max(initialTop, 10);
+
+          if (scrollY > triggerPoint) {
+            if (!isFixed) {
+              isFixed = true;
+              header.classList.add('offline-sticky-fixed-active', 'is-sticky', 'sticky-active', 'scrolled', 'elementor-sticky--active');
+              
+              var parentHeight = header.parentElement ? header.parentElement.offsetHeight : 0;
+              if (parentHeight <= headerHeight + 30) {
+                header.style.position = 'fixed';
+                header.style.top = '0px';
+                header.style.left = '0px';
+                header.style.width = '100%';
+                header.style.zIndex = '99999';
+                spacer.style.display = 'block';
+              }
+              
+              if (!hasBg) {
+                header.style.backgroundColor = fallbackBg;
+              }
+              header.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.08)';
+            }
+          } else {
+            if (isFixed) {
+              isFixed = false;
+              header.classList.remove('offline-sticky-fixed-active', 'is-sticky', 'sticky-active', 'scrolled', 'elementor-sticky--active');
+              
+              var origPos = header.getAttribute('data-sticky-original-pos');
+              if (origPos === 'fixed') {
+                header.style.position = 'fixed';
+              } else {
+                header.style.position = 'sticky';
+              }
+              header.style.top = (header.getAttribute('data-sticky-original-top') || '0px');
+              header.style.left = '';
+              header.style.width = '';
+              header.style.boxShadow = '';
+              if (!hasBg) {
+                header.style.backgroundColor = '';
+              }
+              spacer.style.display = 'none';
+            }
+          }
+        }
+
+        window.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', activateSticky);
+    } else {
+      setTimeout(activateSticky, 50);
+    }
+    window.addEventListener('load', activateSticky);
+  })();
 })();`;
 
 /**
@@ -1024,6 +1233,40 @@ export function generateFullyInlinedHtml(
 
     return match;
   });
+
+  compiledCss += `
+/* ========================================================================
+   OFFLINE STICKY HEADER & OVERFLOW RECOVERY ENGINE
+   Preserves sticky/fixed headers during offline execution and scrolling
+======================================================================== */
+html, body {
+  overflow-x: clip !important;
+}
+
+[data-offline-overflow-fix="true"],
+.site, #page, #wrapper, .wrapper, .main-wrapper, .page-wrapper, .site-content, .elementor {
+  overflow: visible !important;
+  overflow-x: clip !important;
+}
+
+[data-offline-sticky-header="true"],
+.offline-sticky-forced {
+  position: -webkit-sticky !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 99999 !important;
+}
+
+.offline-sticky-fixed-active {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  z-index: 99999 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+  transition: box-shadow 0.25s ease, background-color 0.25s ease !important;
+}
+`;
 
   // 5. Inlining JS:
   let compiledJs = OFFLINE_AIRGAP_EARLY_CODE + '\n';
